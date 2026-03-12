@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# backupx - scalable multi-backup orchestrator for bash-space
+# Logs go to bash-space/.bashspace/logs/backups
+# Log format: YYYYMMDD_method_mode_destfolder.log
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# -----------------------------
+# Directories
+# -----------------------------
+REPO_DIR="${REPO_DIR:-$HOME/systems-engineer/Systems/XSpace/bash-space}"
+CONF="$REPO_DIR/.bashspace/backups.conf"
+LOG_DIR="$REPO_DIR/.bashspace/logs/backups"
+
+mkdir -p "$LOG_DIR"
+
+echo "Starting backup at $(date)"
+echo "-----------------------------------"
+
+# -----------------------------
+# Read backups.conf line by line
+# -----------------------------
+while IFS='|' read -r method source dest options mode; do
+    # Skip comments or empty lines
+    [[ "$method" =~ ^#.*$ ]] && continue
+    [[ -z "$method" ]] && continue
+
+    # Destination folder name (basename)
+    dest_name=$(basename "$dest")
+    # Date prefix
+    date_prefix=$(date +'%Y%m%d')
+    # Log file
+    log_file="$LOG_DIR/${date_prefix}_backupx_${method}_${mode}_${dest_name}.log"
+
+    case "$method" in
+        rclone)
+            echo "[rclone] $source -> $dest | mode: $mode"
+            mkdir -p "$(dirname "$dest")" 2>/dev/null || true
+            if [[ "$mode" == "copy" ]]; then
+                rclone copy $options "$source" "$dest" >> "$log_file" 2>&1
+            elif [[ "$mode" == "sync" ]]; then
+                rclone sync $options "$source" "$dest" >> "$log_file" 2>&1
+            else
+                echo "Unknown mode: $mode" >> "$log_file"
+            fi
+            ;;
+        rsync)
+            echo "[rsync] $source -> $dest | mode: $mode"
+            if [[ "$mode" == "copy" ]]; then
+                rsync $options --ignore-existing "$source" "$dest" >> "$log_file" 2>&1
+            elif [[ "$mode" == "sync" ]]; then
+                rsync $options "$source" "$dest" >> "$log_file" 2>&1
+            fi
+            ;;
+        tar)
+            echo "[tar] $source -> $dest"
+            mkdir -p "$(dirname "$dest")"
+            tar czf "$dest" $options "$source" >> "$log_file" 2>&1
+            ;;
+        *)
+            echo "Unknown backup method: $method" >> "$log_file"
+            ;;
+    esac
+
+    echo "Finished $method backup for $source"
+    echo "-----------------------------------"
+done < "$CONF"
+
+echo "All backups completed at $(date)"

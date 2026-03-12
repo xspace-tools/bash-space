@@ -1,0 +1,6 @@
+set -euo pipefail
+echo "Running system update..."
+sudo dnf upgrade --refresh -y
+flatpak update -y || true
+sudo dnf autoremove -y || true
+echo "System update finished."

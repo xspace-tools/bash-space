@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# refreshx - reload shell and clear command cache
+
+# Reload user's bashrc or zshrc depending on shell
+if [ -n "${BASH_VERSION-}" ]; then
+    source ~/.bashrc
+elif [ -n "${ZSH_VERSION-}" ]; then
+    source ~/.zshrc
+else
+    echo "Unknown shell. Please reload manually."
+    exit 1
+fi
+
+# Clear bash command cache
+hash -r
+
+echo "Shell environment refreshed and command cache cleared."
