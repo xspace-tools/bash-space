@@ -1,0 +1,475 @@
+#!/usr/bin/env bash
+# commitx — GitSpace commit helper (robust status + staging + interactive commit)
+# Path: ~/systems-engineer/Systems/XSpace/git-space/bin/commitx
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# -----------------------------
+# Resolve real script path (works with symlinks)
+# -----------------------------
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/../lib"
+LOG_DIR="${HOME}/.gitspace/logs"
+mkdir -p "$LOG_DIR"
+
+# -----------------------------
+# Load shared libs (fail fast if missing) but provide safe fallbacks
+# -----------------------------
+for lib in validation.sh formatting.sh safety.sh ui.sh; do
+    if [[ -f "$LIB_DIR/$lib" ]]; then
+        # shellcheck source=/dev/null
+        source "$LIB_DIR/$lib"
+    fi
+done
+
+# Provide small fallback helpers if lib functions are missing so script doesn't die
+: "${print_info:=__missing_print_info}"
+: "${print_error:=__missing_print_error}"
+: "${print_success:=__missing_print_success}"
+: "${prompt_confirm:=__missing_prompt_confirm}"
+: "${validate_commit_type:=__missing_validate_commit_type}"
+: "${prevent_commit_on_main:=__missing_prevent_commit_on_main}"
+: "${validate_staged_changes:=__missing_validate_staged_changes}"
+: "${wrap_body:=__missing_wrap_body}"
+: "${build_commit_header:=__missing_build_commit_header}"
+
+__missing_print_info(){ printf "[INFO] %s\n" "$*"; }
+__missing_print_error(){ printf "[ERROR] %s\n" "$*" >&2; }
+__missing_print_success(){ printf "[OK] %s\n" "$*"; }
+__missing_prompt_confirm(){ 
+  # Default yes/no prompt. Returns 0 for yes, 1 for no.
+  local prompt="${1:-Proceed?}"
+  while true; do
+    read -r -p "$prompt [y/N]: " answer
+    case "${answer,,}" in
+      y|yes) return 0 ;;
+      n|no|'' ) return 1 ;;
+      *) echo "Please answer y or n." ;;
+    esac
+  done
+}
+__missing_validate_commit_type(){ 
+  # simple validator: allow common types
+  case "$1" in
+    feat|fix|docs|style|refactor|test|chore) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+__missing_prevent_commit_on_main(){ return 0; }
+__missing_validate_staged_changes(){ return 0; }
+__missing_wrap_body(){ printf "%s" "$1"; }
+__missing_build_commit_header(){ 
+  local type="$1"; local scope="$2"; local summary="$3"
+  if [[ -n "$scope" ]]; then
+    printf "%s(%s): %s" "$type" "$scope" "$summary"
+  else
+    printf "%s: %s" "$type" "$summary"
+  fi
+}
+
+# If libs provided real implementations, prefer them
+# (the variable indirection above already points to either the real function or fallback)
+
+# -----------------------------
+# Usage
+# -----------------------------
+usage() {
+    cat <<'EOF'
+commitx — GitSpace commit helper
+
+Usage:
+  commitx [flags]
+
+Flags:
+  --type <type>            Commit type (feat,fix,docs,style,refactor,test,chore)
+  --scope <scope>          Commit scope (module/folder)
+  --summary <text>         Short summary (<=50 chars)
+  --body-file <file>       Read commit body from file
+  --footer-file <file>     Read footer from file
+  --amend                  Amend last commit
+  --signoff                Add Signed-off-by line
+  --gpg                    Use GPG signing (-S)
+  --yes / -y               Auto-confirm commit
+  --editor <cmd>           Editor command (overrides $EDITOR)
+  --non-interactive        Fail if required fields missing
+  --no-stage               Do not run 'git add --all' automatically
+  --help                   Show this help
+EOF
+}
+
+# -----------------------------
+# Parse CLI args
+# -----------------------------
+AMEND_MODE=false
+SIGNOFF=false
+GPG_SIGN=false
+AUTO_YES=false
+NON_INTERACTIVE=false
+NO_STAGE=false
+EDITOR_CMD=""
+declare -A ARGS
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --type) ARGS[type]="$2"; shift 2 ;;
+        --scope) ARGS[scope]="$2"; shift 2 ;;
+        --summary) ARGS[summary]="$2"; shift 2 ;;
+        --body-file) ARGS[body_file]="$2"; shift 2 ;;
+        --footer-file) ARGS[footer_file]="$2"; shift 2 ;;
+        --amend) AMEND_MODE=true; shift ;;
+        --signoff) SIGNOFF=true; shift ;;
+        --gpg) GPG_SIGN=true; shift ;;
+        -y|--yes) AUTO_YES=true; shift ;;
+        --editor) EDITOR_CMD="$2"; shift 2 ;;
+        --non-interactive) NON_INTERACTIVE=true; shift ;;
+        --no-stage) NO_STAGE=true; shift ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "Unknown arg: $1"; usage; exit 1 ;;
+    esac
+done
+
+# -----------------------------
+# Ensure inside a git repo
+# -----------------------------
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    __missing_print_error "Not inside a Git repository."
+    exit 1
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# -----------------------------
+# Optionally stage everything (user can disable with --no-stage)
+# -----------------------------
+if [[ "$NO_STAGE" != true ]]; then
+    __missing_print_info "Running: git add --all (staging all changes)..."
+    git add --all
+else
+    __missing_print_info "Skipping auto-staging ( --no-stage )"
+fi
+
+# Show compact status to user
+__missing_print_info "Current git status (short):"
+git --no-pager status --short || true
+
+# -----------------------------
+# Parse porcelain output robustly
+# -----------------------------
+porcelain="$(git status --porcelain=1 2>/dev/null || true)"
+
+staged_count=0
+staged_added=0
+staged_modified=0
+staged_deleted=0
+staged_renamed=0
+unstaged_count=0
+untracked_count=0
+
+staged_list=()
+unstaged_list=()
+untracked_list=()
+
+# Use a robust loop that handles last-line-without-newline
+while IFS= read -r line || [[ -n "${line:-}" ]]; do
+    # skip empty lines
+    [[ -z "${line//[[:space:]]/}" ]] && continue
+
+    # porcelain format: XY<space>path or '?? path' ; handle spaces in filename
+    code="${line:0:2}"
+    # file part starts after first 3 characters (2 status + space) but handle if no space
+    file_part="${line:3}"
+    if [[ -z "$file_part" ]]; then
+        # fallback: try splitting on space(s)
+        file_part="$(printf '%s' "$line" | awk '{$1=""; sub(/^ /,""); print}')"
+    fi
+
+    # Normalize file path
+    file="$file_part"
+
+    # untracked (??)
+    if [[ "$code" == "??" ]]; then
+        (( ++untracked_count ))
+        untracked_list+=("$file")
+        continue
+    fi
+
+    index_status="${code:0:1}"
+    worktree_status="${code:1:1}"
+
+    # Staged (index_status not space)
+    if [[ "$index_status" != " " ]]; then
+        (( ++staged_count ))
+        staged_list+=("$file")
+        case "$index_status" in
+            A) (( ++staged_added )) ;;
+            M) (( ++staged_modified )) ;;
+            D) (( ++staged_deleted )) ;;
+            R) (( ++staged_renamed )) ;;
+            *) : ;;
+        esac
+    fi
+
+    # Unstaged (worktree_status not space)
+    if [[ "$worktree_status" != " " ]]; then
+        (( ++unstaged_count ))
+        unstaged_list+=("$file")
+    fi
+done <<< "$porcelain"
+
+# Plain-language summary
+echo
+__missing_print_info "Staging summary:"
+if (( staged_count == 0 && untracked_count == 0 && unstaged_count == 0 )); then
+    echo "  Nothing to commit (working tree clean)."
+else
+    if (( staged_count > 0 )); then
+        echo "  Staged: $staged_count file(s) — added: $staged_added, modified: $staged_modified, deleted: $staged_deleted, renamed: $staged_renamed"
+        if (( ${#staged_list[@]} > 0 )); then
+            echo "    Staged files (showing up to 20):"
+            for f in "${staged_list[@]:0:20}"; do echo "      - $f"; done
+            if (( ${#staged_list[@]} > 20 )); then echo "      ... and $(( ${#staged_list[@]} - 20 )) more"; fi
+        fi
+    else
+        echo "  Staged: none"
+    fi
+
+    if (( unstaged_count > 0 )); then
+        echo "  Unstaged (modified but not staged): $unstaged_count file(s)"
+        if (( ${#unstaged_list[@]} > 0 )); then
+            echo "    Unstaged files (showing up to 20):"
+            for f in "${unstaged_list[@]:0:20}"; do echo "      - $f"; done
+            if (( ${#unstaged_list[@]} > 20 )); then echo "      ... and $(( ${#unstaged_list[@]} - 20 )) more"; fi
+        fi
+    fi
+
+    if (( untracked_count > 0 )); then
+        echo "  Untracked: $untracked_count file(s)"
+        if (( ${#untracked_list[@]} > 0 )); then
+            echo "    Untracked files (showing up to 20):"
+            for f in "${untracked_list[@]:0:20}"; do echo "      - $f"; done
+            if (( ${#untracked_list[@]} > 20 )); then echo "      ... and $(( ${#untracked_list[@]} - 20 )) more"; fi
+        fi
+    fi
+fi
+echo
+
+# -----------------------------
+# Detect whether repository has any commits yet
+# -----------------------------
+REPO_HAS_COMMITS=true
+if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
+    REPO_HAS_COMMITS=false
+fi
+
+if [[ "$REPO_HAS_COMMITS" == true ]]; then
+    CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "HEAD")"
+else
+    CURRENT_BRANCH="(no-commits)"
+fi
+
+# If staged_count is zero and repo has commits, inform user
+if [[ "$REPO_HAS_COMMITS" == true && $staged_count -eq 0 && $untracked_count -eq 0 && $unstaged_count -eq 0 ]]; then
+    __missing_print_info "Note: nothing is staged after running 'git add --all'."
+fi
+
+# -----------------------------
+# Safety checks (skip checks that assume HEAD for fresh repos)
+# -----------------------------
+if [[ "$AMEND_MODE" != true ]]; then
+    if [[ "$REPO_HAS_COMMITS" == true ]]; then
+        prevent_commit_on_main || exit 1
+        validate_staged_changes || exit 1
+    else
+        __missing_print_info "Repository has no commits yet — skipping HEAD-based checks."
+    fi
+else
+    if [[ "$AMEND_MODE" == true && "$REPO_HAS_COMMITS" == false ]]; then
+        __missing_print_error "Cannot --amend in a repository with no commits."
+        exit 1
+    fi
+    [[ "$REPO_HAS_COMMITS" == true ]] && prevent_commit_on_main || true
+fi
+
+# -----------------------------
+# Auto scope / ticket detection from branch name
+# -----------------------------
+AUTO_SCOPE=""
+AUTO_TICKET=""
+if [[ "$CURRENT_BRANCH" =~ ^(feature|fix|refactor|docs|chore|test|experiment|breaking)/([^/]+)/?.*$ ]]; then
+    AUTO_SCOPE="${BASH_REMATCH[2]}"
+fi
+if [[ "$CURRENT_BRANCH" =~ ([A-Z]{2,}-[0-9]+) ]]; then
+    AUTO_TICKET="${BASH_REMATCH[1]}"
+elif [[ "$CURRENT_BRANCH" =~ \#([0-9]+) ]]; then
+    AUTO_TICKET="#${BASH_REMATCH[1]}"
+fi
+
+# -----------------------------
+# Editor selection
+# -----------------------------
+detect_editor_cmd() {
+    if [[ -n "$EDITOR_CMD" ]]; then echo "$EDITOR_CMD"; return; fi
+    if command -v code >/dev/null 2>&1; then echo "code --wait"; return; fi
+    if [[ -n "${EDITOR:-}" ]]; then echo "$EDITOR"; return; fi
+    if command -v nano >/dev/null 2>&1; then echo "nano"; return; fi
+    if command -v vi >/dev/null 2>&1; then echo "vi"; return; fi
+    echo ""
+}
+EDITOR_FINAL="$(detect_editor_cmd)"
+
+# Compose with editor. Editor string may include args (e.g. "code --wait").
+compose_with_editor() {
+    local tmpf
+    tmpf="$(mktemp)"
+    trap 'rm -f "$tmpf"' RETURN
+    [[ -n "$1" && -f "$1" ]] && cat "$1" > "$tmpf"
+    if [[ -n "$EDITOR_FINAL" ]]; then
+        if [[ "$EDITOR_FINAL" =~ [[:space:]] ]]; then
+            eval "$EDITOR_FINAL \"\$tmpf\""
+        else
+            "$EDITOR_FINAL" "$tmpf"
+        fi
+        cat "$tmpf"
+    else
+        echo "No editor found. Enter text; end with a single '.' on a line."
+        local out=""
+        while IFS= read -r line; do
+            [[ "$line" == "." ]] && break
+            out+="$line"$'\n'
+        done
+        printf "%s" "$out"
+    fi
+}
+
+read_optional_file() {
+    [[ -n "$1" && -f "$1" ]] && cat "$1" || echo ""
+}
+
+# -----------------------------
+# Fields initialization
+# -----------------------------
+TYPE="${ARGS[type]:-}"
+SCOPE="${ARGS[scope]:-}"
+SUMMARY="${ARGS[summary]:-}"
+BODY=""
+FOOTER=""
+
+[[ -n "${ARGS[body_file]:-}" ]] && BODY="$(read_optional_file "${ARGS[body_file]}")"
+[[ -n "${ARGS[footer_file]:-}" ]] && FOOTER="$(read_optional_file "${ARGS[footer_file]}")"
+
+# -----------------------------
+# Interactive collection / validation
+# -----------------------------
+if [[ -z "$TYPE" ]]; then
+    if [[ "$NON_INTERACTIVE" == true ]]; then
+        __missing_print_error "--type required in non-interactive mode"
+        exit 1
+    fi
+    while true; do
+        read -r -p "Commit type (feat/fix/docs/style/refactor/test/chore): " TYPE
+        TYPE="${TYPE//[[:space:]]/}"
+        if validate_commit_type "$TYPE"; then break; else __missing_print_error "Invalid type: $TYPE"; fi
+    done
+else
+    validate_commit_type "$TYPE" || (__missing_print_error "Invalid type: $TYPE" && exit 1)
+fi
+
+# Scope
+if [[ -z "$SCOPE" ]]; then
+    if [[ -n "$AUTO_SCOPE" && "$NON_INTERACTIVE" != true ]]; then
+        read -r -p "Scope [auto: $AUTO_SCOPE] (optional): " SCOPE
+        [[ -z "$SCOPE" ]] && SCOPE="$AUTO_SCOPE" && __missing_print_info "Using auto scope: $SCOPE"
+    elif [[ "$NON_INTERACTIVE" == true ]]; then
+        SCOPE="${SCOPE:-$AUTO_SCOPE}"
+    else
+        read -r -p "Scope (optional): " SCOPE
+    fi
+fi
+
+# Summary
+if [[ -z "$SUMMARY" ]]; then
+    if [[ "$NON_INTERACTIVE" == true ]]; then __missing_print_error "--summary required"; exit 1; fi
+    while true; do
+        read -r -p "Short summary (<=50 chars): " SUMMARY
+        SUMMARY="$(echo "$SUMMARY" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        [[ -n "$SUMMARY" && ${#SUMMARY} -le 50 ]] && break
+        __missing_print_error "Summary invalid or too long."
+    done
+else
+    SUMMARY="$(echo "$SUMMARY" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+    [[ ${#SUMMARY} -gt 50 ]] && __missing_print_error "Summary too long (>50 chars)" && exit 1
+fi
+
+# Body (open editor if needed)
+if [[ -z "$BODY" && "$NON_INTERACTIVE" != true ]]; then
+    __missing_print_info "Opening editor to write commit body."
+    BODY="$(compose_with_editor "${ARGS[body_file]:-}")"
+fi
+
+# Footer
+[[ -z "$FOOTER" && -n "$AUTO_TICKET" ]] && FOOTER="Closes $AUTO_TICKET"
+if [[ "$NON_INTERACTIVE" != true ]]; then
+    TEMP_FOOTER="$(mktemp)"
+    trap 'rm -f "$TEMP_FOOTER"' RETURN
+    [[ -n "$FOOTER" ]] && echo "$FOOTER" > "$TEMP_FOOTER"
+    if [[ -n "$EDITOR_FINAL" ]]; then
+        if [[ "$EDITOR_FINAL" =~ [[:space:]] ]]; then
+            eval "$EDITOR_FINAL \"\$TEMP_FOOTER\""
+        else
+            "$EDITOR_FINAL" "$TEMP_FOOTER"
+        fi
+    fi
+    FOOTER="$(cat "$TEMP_FOOTER")"
+fi
+
+# Clean + wrap helpers
+clean_text() { echo "$1" | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/\n{3,}/\n\n/g'; }
+
+BODY="$(wrap_body "$(clean_text "$BODY")")"
+FOOTER="$(wrap_body "$(clean_text "$FOOTER")")"
+
+# Header & commit message
+HEADER="$(build_commit_header "$TYPE" "$SCOPE" "$SUMMARY")"
+COMMIT_MSG="$HEADER"
+[[ -n "$BODY" ]] && COMMIT_MSG+=$'\n\n'"$BODY"
+[[ -n "$FOOTER" ]] && COMMIT_MSG+=$'\n\n'"$FOOTER"
+[[ "$SIGNOFF" == true ]] && COMMIT_MSG+=$'\n\n'"Signed-off-by: $(git config user.name) <$(git config user.email)>"
+
+# Preview staged summary safely (don't error if no HEAD)
+STAGED_SUMMARY="$(git --no-pager diff --cached --stat 2>/dev/null || true)"
+BOLD="\e[1m"; DIM="\e[2m"; CYAN="\e[36m"; RESET="\e[0m"
+echo -e "${BOLD}${CYAN}=== Commit message preview ===${RESET}\n$COMMIT_MSG\n${DIM}--- Staged changes ---${RESET}\n$STAGED_SUMMARY\n${BOLD}${CYAN}==============================${RESET}"
+
+# Confirm
+if [[ "$AUTO_YES" != true ]]; then
+    if ! prompt_confirm "Proceed with commit?"; then
+        __missing_print_error "Commit canceled."
+        exit 1
+    fi
+fi
+
+# Commit flags
+COMMIT_FLAGS=()
+[[ "$SIGNOFF" == true ]] && COMMIT_FLAGS+=("-s")
+[[ "$GPG_SIGN" == true ]] && COMMIT_FLAGS+=("-S")
+
+# Commit: handle amend and first-commit cases
+if [[ "$AMEND_MODE" == true ]]; then
+    git commit --amend -m "$COMMIT_MSG" "${COMMIT_FLAGS[@]}"
+else
+    if [[ "$REPO_HAS_COMMITS" == false ]]; then
+        git commit --allow-empty -m "$COMMIT_MSG" "${COMMIT_FLAGS[@]}"
+    else
+        git commit -m "$COMMIT_MSG" "${COMMIT_FLAGS[@]}"
+    fi
+fi
+
+# Success + logging
+LAST_COMMIT_LINE="$(git --no-pager log -1 --pretty=format:'%h %s (%an, %cr)')"
+__missing_print_success "Commit created: $LAST_COMMIT_LINE"
+TIMESTAMP="$(date --iso-8601=seconds)"
+printf "%s\t%s\t%s\t%s\t%s\n" "$TIMESTAMP" "$REPO_ROOT" "$CURRENT_BRANCH" "$TYPE" "$SUMMARY" >> "${LOG_DIR}/commits.log"
+
+exit 0
