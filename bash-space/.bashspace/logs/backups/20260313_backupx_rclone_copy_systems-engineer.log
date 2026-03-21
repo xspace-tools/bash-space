@@ -1388,3 +1388,602 @@ Checks:              3271 / 3271, 100%, Listed 10048
 Transferred:          326 / 326, 100%
 Elapsed time:      4m52.8s
 
+2026/03/13 09:05:29 INFO  : Systems/XSpace: Set directory modification time (using SetModTime)
+2026/03/13 09:05:29 INFO  : Portfolio/2026-wellpath/wellpath: Set directory modification time (using SetModTime)
+2026/03/13 09:05:30 INFO  : Systems/XSpace/git-space: Set directory modification time (using SetModTime)
+2026/03/13 09:05:30 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool: Set directory modification time (using SetModTime)
+2026/03/13 09:05:32 INFO  : Portfolio/2026-wellpath/wellpath/build: Set directory modification time (using SetModTime)
+2026/03/13 09:05:32 INFO  : Systems/XSpace/git-space/bin: Set directory modification time (using SetModTime)
+2026/03/13 09:05:33 INFO  : Portfolio/2026-wellpath/wellpath/pubspec.lock: Updated modification time in destination
+2026/03/13 09:05:33 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device: Set directory modification time (using SetModTime)
+2026/03/13 09:05:33 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/dartpad: Set directory modification time (using SetModTime)
+2026/03/13 09:05:33 INFO  : Systems/XSpace/.git/description: Copied (new)
+2026/03/13 09:05:33 INFO  : Systems/XSpace/.git/HEAD: Copied (new)
+2026/03/13 09:05:33 INFO  : Systems/XSpace/.git/config: Copied (new)
+2026/03/13 09:05:33 INFO  : Systems/XSpace/.git/COMMIT_EDITMSG: Copied (new)
+2026/03/13 09:05:33 INFO  : Systems/XSpace/bash-space/.bashspace/logs/backups: Set directory modification time (using SetModTime)
+2026/03/13 09:05:34 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner: Set directory modification time (using SetModTime)
+2026/03/13 09:05:35 INFO  : Systems/XSpace/.git/index: Copied (new)
+2026/03/13 09:05:35 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/package_config.json: Updated modification time in destination
+2026/03/13 09:05:35 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/version: Updated modification time in destination
+2026/03/13 09:05:36 INFO  : Systems/XSpace/.git/hooks/fsmonitor-watchman.sample: Copied (new)
+2026/03/13 09:05:36 INFO  : Systems/XSpace/.git/hooks/applypatch-msg.sample: Copied (new)
+2026/03/13 09:05:36 INFO  : Systems/XSpace/.git/hooks/post-update.sample: Copied (new)
+2026/03/13 09:05:36 INFO  : Systems/XSpace/.git/hooks/commit-msg.sample: Copied (new)
+2026/03/13 09:05:36 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default: Set directory modification time (using SetModTime)
+2026/03/13 09:05:37 INFO  : Portfolio/2026-wellpath/wellpath/build/444a280e00c5b909654d1ee6a16ec31a: Set directory modification time (using SetModTime)
+2026/03/13 09:05:37 INFO  : Systems/XSpace/.git/hooks/pre-commit.sample: Copied (new)
+2026/03/13 09:05:37 INFO  : Systems/XSpace/.git/hooks/pre-applypatch.sample: Copied (new)
+2026/03/13 09:05:37 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/dartpad/web_plugin_registrant.dart: Updated modification time in destination
+2026/03/13 09:05:37 NOTICE: Systems/QSpace/2026-qspace-pages/pages/linux/flutter/ephemeral/.plugin_symlinks/path_provider_linux: Can't follow symlink without -L/--copy-links
+2026/03/13 09:05:37 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets: Set directory modification time (using SetModTime)
+2026/03/13 09:05:37 INFO  : Systems/XSpace/.git/hooks/pre-merge-commit.sample: Copied (new)
+2026/03/13 09:05:38 INFO  : Systems/XSpace/.git/hooks/pre-push.sample: Copied (new)
+2026/03/13 09:05:38 INFO  : Portfolio/2026-wellpath/wellpath/build/native_hooks: Set directory modification time (using SetModTime)
+2026/03/13 09:05:38 INFO  : Portfolio/2026-wellpath/wellpath/ios/Flutter: Set directory modification time (using SetModTime)
+2026/03/13 09:05:38 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c: Set directory modification time (using SetModTime)
+2026/03/13 09:05:39 INFO  : Systems/XSpace/.git/hooks/pre-rebase.sample: Copied (new)
+2026/03/13 09:05:39 INFO  : Systems/XSpace/.git/hooks/pre-receive.sample: Copied (new)
+2026/03/13 09:05:39 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/shared: Set directory modification time (using SetModTime)
+2026/03/13 09:05:39 INFO  : Systems/XSpace/.git/hooks/prepare-commit-msg.sample: Copied (new)
+2026/03/13 09:05:39 INFO  : Systems/XSpace/.git/hooks/push-to-checkout.sample: Copied (new)
+2026/03/13 09:05:39 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/AutofillStrikeDatabase: Set directory modification time (using SetModTime)
+2026/03/13 09:05:39 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Affiliation Database-journal: Updated modification time in destination
+2026/03/13 09:05:39 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Affiliation Database: Updated modification time in destination
+2026/03/13 09:05:39 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Account Web Data-journal: Updated modification time in destination
+2026/03/13 09:05:40 INFO  : Systems/XSpace/.git/hooks/sendemail-validate.sample: Copied (new)
+2026/03/13 09:05:40 INFO  : Systems/XSpace/.git/hooks/update.sample: Copied (new)
+2026/03/13 09:05:41 INFO  : Systems/XSpace/.git/info/exclude: Copied (new)
+2026/03/13 09:05:41 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/BudgetDatabase: Set directory modification time (using SetModTime)
+2026/03/13 09:05:41 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/BrowsingTopicsSiteData-journal: Updated modification time in destination
+2026/03/13 09:05:41 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/BookmarkMergedSurfaceOrdering: Updated modification time in destination
+2026/03/13 09:05:41 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/BrowsingTopicsSiteData: Updated modification time in destination
+2026/03/13 09:05:42 INFO  : Portfolio/2026-wellpath/wellpath/pubspec.yaml: Copied (replaced existing)
+2026/03/13 09:05:42 INFO  : Systems/XSpace/.git/logs/HEAD: Copied (new)
+2026/03/13 09:05:42 INFO  : Portfolio/2026-wellpath/wellpath/.flutter-plugins-dependencies: Copied (replaced existing)
+2026/03/13 09:05:44 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/chrome_cart_db: Set directory modification time (using SetModTime)
+2026/03/13 09:05:44 INFO  : Portfolio/2026-wellpath/wellpath/build/444a280e00c5b909654d1ee6a16ec31a/dart_build.d: Updated modification time in destination
+2026/03/13 09:05:44 INFO  : Portfolio/2026-wellpath/wellpath/build/444a280e00c5b909654d1ee6a16ec31a/_composite.stamp: Updated modification time in destination
+2026/03/13 09:05:44 INFO  : Portfolio/2026-wellpath/wellpath/build/444a280e00c5b909654d1ee6a16ec31a/dart_build.stamp: Updated modification time in destination
+2026/03/13 09:05:44 INFO  : Portfolio/2026-wellpath/wellpath/build/444a280e00c5b909654d1ee6a16ec31a/gen_localizations.stamp: Updated modification time in destination
+2026/03/13 09:05:44 INFO  : Portfolio/2026-wellpath/wellpath/build/444a280e00c5b909654d1ee6a16ec31a/gen_dart_plugin_registrant.stamp: Updated modification time in destination
+2026/03/13 09:05:44 INFO  : Portfolio/2026-wellpath/wellpath/build/444a280e00c5b909654d1ee6a16ec31a/outputs.json: Updated modification time in destination
+2026/03/13 09:05:44 INFO  : Systems/XSpace/.git/objects/0c/516c166ab4a33070cc8d529038c104279293f3: Copied (new)
+2026/03/13 09:05:45 INFO  : Systems/XSpace/.git/objects/0c/918d76c5b88bb351c6b101d525bad791c95a71: Copied (new)
+2026/03/13 09:05:46 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/ClientCertificates: Set directory modification time (using SetModTime)
+2026/03/13 09:05:46 INFO  : Portfolio/2026-wellpath/wellpath/ios/Flutter/ephemeral: Set directory modification time (using SetModTime)
+2026/03/13 09:05:47 INFO  : Systems/XSpace/.git/refs/heads/main: Copied (new)
+2026/03/13 09:05:47 INFO  : Systems/XSpace/.git/refs/heads/dev: Copied (new)
+2026/03/13 09:05:47 INFO  : Portfolio/2026-wellpath/wellpath/linux/flutter: Set directory modification time (using SetModTime)
+2026/03/13 09:05:47 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/commerce_subscription_db: Set directory modification time (using SetModTime)
+2026/03/13 09:05:47 INFO  : Portfolio/2026-wellpath/wellpath/ios/Flutter/flutter_export_environment.sh: Updated modification time in destination
+2026/03/13 09:05:47 INFO  : Portfolio/2026-wellpath/wellpath/ios/Flutter/Generated.xcconfig: Updated modification time in destination
+2026/03/13 09:05:47 INFO  : Systems/XSpace/.git/refs/heads/test: Copied (new)
+2026/03/13 09:05:47 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc: Set directory modification time (using SetModTime)
+2026/03/13 09:05:47 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Cookies: Updated modification time in destination
+2026/03/13 09:05:47 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/discount_infos_db: Set directory modification time (using SetModTime)
+2026/03/13 09:05:47 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Cookies-journal: Updated modification time in destination
+2026/03/13 09:05:48 INFO  : Systems/XSpace/.git/objects/0e/8f96fcf1b60d314b3a14baa6b4d650154865d2: Copied (new)
+2026/03/13 09:05:48 INFO  : Systems/XSpace/git-space/update.sh: Copied (new)
+2026/03/13 09:05:48 INFO  : Systems/XSpace/git-space/install.sh: Copied (replaced existing)
+2026/03/13 09:05:48 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets: Set directory modification time (using SetModTime)
+2026/03/13 09:05:48 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/discounts_db: Set directory modification time (using SetModTime)
+2026/03/13 09:05:49 INFO  : Systems/XSpace/.git/objects/17/0a7a8088d50af06a73e6cb91f835fc05316bce: Copied (new)
+2026/03/13 09:05:50 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/fonts: Set directory modification time (using SetModTime)
+2026/03/13 09:05:50 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/FontManifest.json: Updated modification time in destination
+2026/03/13 09:05:50 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Download Service: Set directory modification time (using SetModTime)
+2026/03/13 09:05:51 INFO  : Systems/XSpace/.git/logs/refs/heads/dev: Copied (new)
+2026/03/13 09:05:51 INFO  : Systems/XSpace/.git/logs/refs/heads/test: Copied (new)
+2026/03/13 09:05:51 NOTICE: Systems/QSpace/2026-qspace-pages/pages/windows/flutter/ephemeral/.plugin_symlinks/path_provider_windows: Can't follow symlink without -L/--copy-links
+2026/03/13 09:05:51 INFO  : Portfolio/2026-wellpath/wellpath/macos/Flutter: Set directory modification time (using SetModTime)
+2026/03/13 09:05:51 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/shaders: Set directory modification time (using SetModTime)
+2026/03/13 09:05:51 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Rules: Set directory modification time (using SetModTime)
+2026/03/13 09:05:51 INFO  : Systems/XSpace/.git/logs/refs/heads/main: Copied (new)
+2026/03/13 09:05:51 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/NOTICES: Updated modification time in destination
+2026/03/13 09:05:52 INFO  : Systems/XSpace/.git/objects/1e/0a24aa87e9e931d9b1707b2e0668d9770368f0: Copied (new)
+2026/03/13 09:05:52 INFO  : Systems/XSpace/bash-space/.bashspace/backups.conf: Copied (replaced existing)
+2026/03/13 09:05:52 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/shared/objective_c: Set directory modification time (using SetModTime)
+2026/03/13 09:05:52 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Scripts: Set directory modification time (using SetModTime)
+2026/03/13 09:05:54 INFO  : Systems/XSpace/.git/objects/27/1f5a778f9dc7f47066595745fd091ae6b374df: Copied (new)
+2026/03/13 09:05:56 INFO  : Systems/XSpace/.git/refs/remotes/origin/main: Copied (new)
+2026/03/13 09:05:56 INFO  : Portfolio/2026-wellpath/wellpath/ios/Flutter/ephemeral/flutter_lldbinit: Updated modification time in destination
+2026/03/13 09:05:56 INFO  : Portfolio/2026-wellpath/wellpath/ios/Flutter/ephemeral/flutter_lldb_helper.py: Updated modification time in destination
+2026/03/13 09:05:56 INFO  : Systems/XSpace/git-space/.gitspace/installed: Copied (new)
+2026/03/13 09:05:56 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension State: Set directory modification time (using SetModTime)
+2026/03/13 09:05:57 INFO  : Systems/XSpace/.git/objects/2b/ab604496f53dc424ad48295ccce77442771f97: Copied (new)
+2026/03/13 09:05:57 INFO  : Systems/XSpace/.git/objects/2b/c10e9e891fdce5c5ed01f8e7e44e836e89051f: Copied (new)
+2026/03/13 09:05:57 INFO  : Systems/XSpace/git-space/bin/commitx: Copied (new)
+2026/03/13 09:05:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Feature Engagement Tracker: Set directory modification time (using SetModTime)
+2026/03/13 09:05:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Favicons-journal: Updated modification time in destination
+2026/03/13 09:05:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc/hook.dill.d: Updated modification time in destination
+2026/03/13 09:05:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc/stderr.txt: Updated modification time in destination
+2026/03/13 09:05:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc/input.json: Updated modification time in destination
+2026/03/13 09:05:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc/hook.dill: Updated modification time in destination
+2026/03/13 09:05:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc/hook.dependencies_hash_file.json: Updated modification time in destination
+2026/03/13 09:05:59 INFO  : Systems/XSpace/.git/logs/refs/remotes/origin/main: Copied (new)
+2026/03/13 09:06:00 INFO  : Portfolio/2026-wellpath/wellpath/build/native_hooks/.last_build_id: Updated modification time in destination
+2026/03/13 09:06:00 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store: Set directory modification time (using SetModTime)
+2026/03/13 09:06:00 INFO  : Systems/XSpace/.git/objects/2c/88dce3271008aa41f1954ddc9cc7a2c77f4402: Copied (new)
+2026/03/13 09:06:01 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/package_graph.json: Copied (replaced existing)
+2026/03/13 09:06:01 INFO  : Portfolio/2026-wellpath/wellpath/macos/Flutter/ephemeral: Set directory modification time (using SetModTime)
+2026/03/13 09:06:01 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/heavy_ad_intervention_opt_out.db-journal: Updated modification time in destination
+2026/03/13 09:06:01 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB: Set directory modification time (using SetModTime)
+2026/03/13 09:06:01 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/History-journal: Updated modification time in destination
+2026/03/13 09:06:01 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/heavy_ad_intervention_opt_out.db: Updated modification time in destination
+2026/03/13 09:06:01 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs: Set directory modification time (using SetModTime)
+2026/03/13 09:06:01 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Local Storage: Set directory modification time (using SetModTime)
+2026/03/13 09:06:02 INFO  : Systems/XSpace/.git/objects/2f/5069cb8d07002a51d644dc2803e249c3668336: Copied (new)
+2026/03/13 09:06:02 NOTICE: Portfolio/2026-wellpath/wellpath/linux/flutter/ephemeral/.plugin_symlinks/path_provider_linux: Can't follow symlink without -L/--copy-links
+2026/03/13 09:06:02 INFO  : Systems/XSpace/.git/objects/37/111557e9935f057807f8a4f56a328dac97cc88: Copied (new)
+2026/03/13 09:06:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Login Data For Account: Updated modification time in destination
+2026/03/13 09:06:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/LOG.old: Updated modification time in destination
+2026/03/13 09:06:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/optimization_guide_hint_cache_store: Set directory modification time (using SetModTime)
+2026/03/13 09:06:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Login Data For Account-journal: Updated modification time in destination
+2026/03/13 09:06:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/LOCK: Updated modification time in destination
+2026/03/13 09:06:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Network Action Predictor-journal: Updated modification time in destination
+2026/03/13 09:06:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/LOG: Updated modification time in destination
+2026/03/13 09:06:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Login Data-journal: Updated modification time in destination
+2026/03/13 09:06:02 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/fonts/MaterialIcons-Regular.otf: Updated modification time in destination
+2026/03/13 09:06:02 INFO  : Systems/XSpace/bash-space/.bashspace/logs/backups/20260313_backupx_rclone_sync_onedrive-sconl:DocumentsBackup.log: Copied (new)
+2026/03/13 09:06:02 INFO  : Systems/XSpace/bash-space/.bashspace/logs/backups/20260313_backupx_rsync_sync_Pictures.log: Copied (new)
+2026/03/13 09:06:02 ERROR : Systems/XSpace/bash-space/.bashspace/logs/backups/20260313_backupx_rclone_copy_systems-engineer.log: Failed to copy: Put "https://acexoft-my.sharepoint.com/personal/sconl_acexoft_com/_api/v2.0/drives/b!1gefhxeg-kexqWlU-vMFeyqYOBGHGz1GpnfWGpcTxJGAxJUq1827RqQ4fYNdIFU0/items/01DNNB3NBPTUNGO47NGBHK72NQ5WB6SRQH/uploadSession?guid='3f2484d1-7499-4016-8278-b0c92ceab0cc'&dc=0&tempauth=v1.eyJzaXRlaWQiOiI4NzlmMDdkNi1hMDE3LTQ3ZmEtYjFhOS02OTU0ZmFmMzA1N2IiLCJhcHBfZGlzcGxheW5hbWUiOiJyY2xvbmUiLCJhcHBpZCI6ImIxNTY2NWQ5LWVkYTYtNDA5Mi04NTM5LTBlZWMzNzZhZmQ1OSIsImF1ZCI6IjAwMDAwMDAzLTAwMDAtMGZmMS1jZTAwLTAwMDAwMDAwMDAwMC9hY2V4b2Z0LW15LnNoYXJlcG9pbnQuY29tQDIxMWYzMGFlLWVjNzctNDgzMC04NzlkLTQxZDkyMzEzOGMxYSIsImV4cCI6IjE3NzM0NjgzNjIifQ.CkAKDGVudHJhX2NsYWltcxIwQ1BqUHpzMEdFQUFhRm0xc2VUY3Rha1Y1VW10SFJWZDBZWFYxVld4R1FVRXFBQT09CjIKCmFjdG9yYXBwaWQSJDAwMDAwMDAzLTAwMDAtMDAwMC1jMDAwLTAwMDAwMDAwMDAwMAoKCgRzbmlkEgI2NhILCK7Hm7OUtIA_EAUaDTIwLjE5MC4xOTAuMzMqLGRnK0l1VXJIYmNQcDRJdGhxWVdUZjE0S0gwTEZBS0xGbTJ6NUtaWUZrNTg9MPgBOAFCEKH_f6IagADwwY5vWvbhTRxKEGhhc2hlZHByb29mdG9rZW5SCFsia21zaSJdaiQwMDExNmQwYS0zZTdiLWQ3ZTMtY2ExMy1mMTNkMDI5YzIxNDByKTBoLmZ8bWVtYmVyc2hpcHwxMDAzMjAwMmYwNzRiY2MyQGxpdmUuY29tegEyggESCa4wHyF37DBIEYedQdkjE4wakgEFU2NvbmyaAQVQZXRlcqIBEXNjb25sQGFjZXhvZnQuY29tqgEQMTAwMzIwMDJGMDc0QkNDMrIBRW15ZmlsZXMucmVhZCBhbGxmaWxlcy5yZWFkIG15ZmlsZXMud3JpdGUgYWxsZmlsZXMud3JpdGUgYWxsc2l0ZXMucmVhZMgBAQ.mjpzVJkx6CGjBAm1lS3O0EGtuf4Eagzpq6Nnaw58eEw": can't copy - source file is being updated (size changed from 211542 to 213391)
+2026/03/13 09:06:03 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/parcel_tracking_db: Set directory modification time (using SetModTime)
+2026/03/13 09:06:04 INFO  : Systems/XSpace/.git/objects/3e/476ae3d1ab1d12bed8ce08d7619bc82b0297dc: Copied (new)
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/macos/Flutter/ephemeral/Flutter-Generated.xcconfig: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/windows/flutter: Set directory modification time (using SetModTime)
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/macos/Flutter/ephemeral/flutter_export_environment.sh: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Systems/XSpace/.git/objects/46/a084f0af05c98211a39c4ca82006e25e845401: Copied (new)
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/shaders/stretch_effect.frag: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/shaders/ink_sparkle.frag: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/PersistentOriginTrials: Set directory modification time (using SetModTime)
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/passkey_enclave_state: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/booking_mobile_screen_female.gif: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/analytics-screen_data_male.gif: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/chat_conversation_male_female.gif: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/booking_mobile_screen_male.gif: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/chat_conversation_screen_digital.gif: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform: Set directory modification time (using SetModTime)
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/authentication_desktop_screen_female.gif: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/goals_personal_checklist_female.gif: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/goals_personal_checklist_male.gif: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/dashboard_presentation_female_group.gif: Updated modification time in destination
+2026/03/13 09:06:05 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/login_digital_fingerprint_female.gif: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/login_digital_screen_male.gif: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/personal_trainer_pushups_female.gif: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker: Set directory modification time (using SetModTime)
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/personal_trainer_weights_male.gif: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/personalized_workout_digital.gif: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/personalized_workout_digital_male.gif: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/physical_therapy_exercise_session.gif: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/sample.png: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Systems/XSpace/.git/objects/4c/02b8d04d385a609b6f4612aca813a9d4f76c9e: Copied (new)
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Account Web Data: Copied (replaced existing)
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/personalized_workout_female_home.gif: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/settings_preferences_digital_male.gif: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/signup_digital_screen_female.gif: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Session Storage: Set directory modification time (using SetModTime)
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/PreferredApps: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/README: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Reporting and NEL-journal: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Safe Browsing Cookies-journal: Updated modification time in destination
+2026/03/13 09:06:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Safe Browsing Cookies: Updated modification time in destination
+2026/03/13 09:06:07 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/BrowsingTopicsState: Copied (replaced existing)
+2026/03/13 09:06:08 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Secure Preferences: Updated modification time in destination
+2026/03/13 09:06:08 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sessions: Set directory modification time (using SetModTime)
+2026/03/13 09:06:08 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/ServerCertificate: Updated modification time in destination
+2026/03/13 09:06:08 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/ServerCertificate-journal: Updated modification time in destination
+2026/03/13 09:06:08 NOTICE: Portfolio/2026-wellpath/wellpath/windows/flutter/ephemeral/.plugin_symlinks/cloud_firestore: Can't follow symlink without -L/--copy-links
+2026/03/13 09:06:08 NOTICE: Portfolio/2026-wellpath/wellpath/windows/flutter/ephemeral/.plugin_symlinks/firebase_auth: Can't follow symlink without -L/--copy-links
+2026/03/13 09:06:08 NOTICE: Portfolio/2026-wellpath/wellpath/windows/flutter/ephemeral/.plugin_symlinks/firebase_core: Can't follow symlink without -L/--copy-links
+2026/03/13 09:06:08 NOTICE: Portfolio/2026-wellpath/wellpath/windows/flutter/ephemeral/.plugin_symlinks/path_provider_windows: Can't follow symlink without -L/--copy-links
+2026/03/13 09:06:08 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shared Dictionary: Set directory modification time (using SetModTime)
+2026/03/13 09:06:08 INFO  : Portfolio/2026-wellpath/wellpath/lib/landing_page.dart: Copied (replaced existing)
+2026/03/13 09:06:08 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db: Set directory modification time (using SetModTime)
+2026/03/13 09:06:09 INFO  : Systems/XSpace/.git/objects/51/4f96b6d30e50b52137d62bdd8e7020a9f5c88f: Copied (new)
+2026/03/13 09:06:09 INFO  : Portfolio/2026-wellpath/wellpath/build/444a280e00c5b909654d1ee6a16ec31a/.filecache: Copied (replaced existing)
+2026/03/13 09:06:09 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Site Characteristics Database: Set directory modification time (using SetModTime)
+2026/03/13 09:06:09 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shortcuts-journal: Updated modification time in destination
+2026/03/13 09:06:09 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/SharedStorage: Updated modification time in destination
+2026/03/13 09:06:10 INFO  : Portfolio/2026-wellpath/wellpath/build/444a280e00c5b909654d1ee6a16ec31a/dart_build_result.json: Copied (replaced existing)
+2026/03/13 09:06:10 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sync Data: Set directory modification time (using SetModTime)
+2026/03/13 09:06:11 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/DIPS: Copied (replaced existing)
+2026/03/13 09:06:11 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Trust Tokens-journal: Updated modification time in destination
+2026/03/13 09:06:11 INFO  : Systems/XSpace/.git/objects/52/9d7ea230b4ab2508a95ae82066aa1c3642e379: Copied (new)
+2026/03/13 09:06:11 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Top Sites-journal: Updated modification time in destination
+2026/03/13 09:06:11 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/WebStorage: Set directory modification time (using SetModTime)
+2026/03/13 09:06:11 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Trust Tokens: Updated modification time in destination
+2026/03/13 09:06:11 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Web Data-journal: Updated modification time in destination
+2026/03/13 09:06:11 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/AssetManifest.bin.json: Copied (replaced existing)
+2026/03/13 09:06:11 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/trusted_vault.pb: Updated modification time in destination
+2026/03/13 09:06:12 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/AssetManifest.bin: Copied (replaced existing)
+2026/03/13 09:06:13 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Favicons: Copied (replaced existing)
+2026/03/13 09:06:13 INFO  : Systems/XSpace/.git/objects/76/124b4d051319b79472517b5031a61b5bdb63b5: Copied (new)
+2026/03/13 09:06:13 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/AutofillStrikeDatabase/LOCK: Updated modification time in destination
+2026/03/13 09:06:13 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/AutofillStrikeDatabase/LOG: Updated modification time in destination
+2026/03/13 09:06:13 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/AutofillStrikeDatabase/LOG.old: Updated modification time in destination
+2026/03/13 09:06:13 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/BudgetDatabase/LOG.old: Updated modification time in destination
+2026/03/13 09:06:13 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/BudgetDatabase/LOCK: Updated modification time in destination
+2026/03/13 09:06:13 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/BudgetDatabase/LOG: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/chrome_cart_db/LOG.old: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/chrome_cart_db/LOCK: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/chrome_cart_db/LOG: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/ClientCertificates/LOCK: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/ClientCertificates/LOG.old: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/ClientCertificates/LOG: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/commerce_subscription_db/LOCK: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/commerce_subscription_db/LOG.old: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/commerce_subscription_db/LOG: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/discount_infos_db/LOCK: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Systems/XSpace/.git/objects/79/477e65f180a3d233f92973d613b4a0dc8f855c: Copied (new)
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Download Service/EntryDB: Set directory modification time (using SetModTime)
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/discount_infos_db/LOG: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/discounts_db/LOG: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/discount_infos_db/LOG.old: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/discounts_db/LOCK: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/discounts_db/LOG.old: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Rules/000003.log: Updated modification time in destination
+2026/03/13 09:06:14 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Rules/CURRENT: Updated modification time in destination
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc/.lock: Copied (replaced existing)
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc/dependencies.dependencies_hash_file.json: Copied (replaced existing)
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Rules/LOCK: Updated modification time in destination
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Feature Engagement Tracker/AvailabilityDB: Set directory modification time (using SetModTime)
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Scripts/CURRENT: Updated modification time in destination
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Scripts/000003.log: Updated modification time in destination
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Rules/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Scripts/LOCK: Updated modification time in destination
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension State/000003.log: Updated modification time in destination
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension State/CURRENT: Updated modification time in destination
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Scripts/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:15 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/Encryption: Set directory modification time (using SetModTime)
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc/stdout.txt: Copied (replaced existing)
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc/output.json: Copied (replaced existing)
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension State/LOCK: Updated modification time in destination
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33341.indexeddb.leveldb: Set directory modification time (using SetModTime)
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Local Storage/leveldb: Set directory modification time (using SetModTime)
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension State/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/LOCK: Updated modification time in destination
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/CURRENT: Updated modification time in destination
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Feature Engagement Tracker/EventDB: Set directory modification time (using SetModTime)
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/optimization_guide_hint_cache_store/LOG.old: Updated modification time in destination
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/optimization_guide_hint_cache_store/LOG: Updated modification time in destination
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/optimization_guide_hint_cache_store/LOCK: Updated modification time in destination
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33881.indexeddb.leveldb: Set directory modification time (using SetModTime)
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/parcel_tracking_db/LOCK: Updated modification time in destination
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/parcel_tracking_db/LOG: Updated modification time in destination
+2026/03/13 09:06:16 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/parcel_tracking_db/LOG.old: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/PersistentOriginTrials/LOCK: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/PersistentOriginTrials/LOG: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/PersistentOriginTrials/LOG.old: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Download Service/EntryDB/LOCK: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Download Service/EntryDB/LOG.old: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SegmentInfoDB: Set directory modification time (using SetModTime)
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_36999.indexeddb.leveldb: Set directory modification time (using SetModTime)
+2026/03/13 09:06:17 INFO  : Systems/XSpace/.git/objects/7c/69231da4261649042f27a1e1a65f9eca528517: Copied (new)
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/Database: Set directory modification time (using SetModTime)
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Download Service/EntryDB/LOG: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/Encryption/000003.log: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/Encryption/CURRENT: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/Encryption/LOCK: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/Encryption/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/shared/objective_c/.lock: Copied (replaced existing)
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Session Storage/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SignalDB: Set directory modification time (using SetModTime)
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Session Storage/CURRENT: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Session Storage/LOCK: Updated modification time in destination
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_45009.indexeddb.leveldb: Set directory modification time (using SetModTime)
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/ScriptCache: Set directory modification time (using SetModTime)
+2026/03/13 09:06:17 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Local Storage/leveldb/CURRENT: Updated modification time in destination
+2026/03/13 09:06:18 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Local Storage/leveldb/LOCK: Updated modification time in destination
+2026/03/13 09:06:18 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/History: Copied (replaced existing)
+2026/03/13 09:06:18 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Local Storage/leveldb/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:18 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Feature Engagement Tracker/AvailabilityDB/LOCK: Updated modification time in destination
+2026/03/13 09:06:18 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Feature Engagement Tracker/AvailabilityDB/LOG.old: Updated modification time in destination
+2026/03/13 09:06:18 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SignalStorageConfigDB: Set directory modification time (using SetModTime)
+2026/03/13 09:06:18 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Feature Engagement Tracker/AvailabilityDB/LOG: Updated modification time in destination
+2026/03/13 09:06:18 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shared Dictionary/cache: Set directory modification time (using SetModTime)
+2026/03/13 09:06:18 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Login Data: Copied (replaced existing)
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sessions/Session_13417782942436028: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Feature Engagement Tracker/EventDB/LOG.old: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Feature Engagement Tracker/EventDB/LOCK: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/metadata: Set directory modification time (using SetModTime)
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Feature Engagement Tracker/EventDB/LOG: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sessions/Tabs_13417782944879156: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/CURRENT: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/000005.ldb: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Network Action Predictor: Copied (replaced existing)
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/LOCK: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shared Dictionary/db-journal: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shared Dictionary/db: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sync Data/LevelDB: Set directory modification time (using SetModTime)
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Site Characteristics Database/LOCK: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Site Characteristics Database/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Site Characteristics Database/CURRENT: Updated modification time in destination
+2026/03/13 09:06:19 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/WebStorage/QuotaManager-journal: Updated modification time in destination
+2026/03/13 09:06:20 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Network Persistent State: Copied (replaced existing)
+2026/03/13 09:06:20 INFO  : Portfolio/2026-wellpath/wellpath/lib/features/auth/auth_providers.dart: Copied (replaced existing)
+2026/03/13 09:06:20 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33341.indexeddb.leveldb/000012.ldb: Updated modification time in destination
+2026/03/13 09:06:20 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33341.indexeddb.leveldb/000008.ldb: Updated modification time in destination
+2026/03/13 09:06:20 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33341.indexeddb.leveldb/000005.ldb: Updated modification time in destination
+2026/03/13 09:06:20 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33341.indexeddb.leveldb/000010.log: Updated modification time in destination
+2026/03/13 09:06:20 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33341.indexeddb.leveldb/CURRENT: Updated modification time in destination
+2026/03/13 09:06:20 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33341.indexeddb.leveldb/LOG.old: Updated modification time in destination
+2026/03/13 09:06:20 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33341.indexeddb.leveldb/LOCK: Updated modification time in destination
+2026/03/13 09:06:21 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33341.indexeddb.leveldb/LOG: Updated modification time in destination
+2026/03/13 09:06:21 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shared Dictionary/cache/index-dir: Set directory modification time (using SetModTime)
+2026/03/13 09:06:21 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/Database/CURRENT: Updated modification time in destination
+2026/03/13 09:06:21 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33341.indexeddb.leveldb/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:21 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/Database/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:21 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33881.indexeddb.leveldb/000004.log: Updated modification time in destination
+2026/03/13 09:06:21 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SegmentInfoDB/LOCK: Updated modification time in destination
+2026/03/13 09:06:21 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SegmentInfoDB/LOG.old: Updated modification time in destination
+2026/03/13 09:06:21 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/ScriptCache/index-dir: Set directory modification time (using SetModTime)
+2026/03/13 09:06:21 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SegmentInfoDB/LOG: Updated modification time in destination
+2026/03/13 09:06:21 INFO  : Systems/XSpace/.git/objects/80/cfcabc9ad5cee72371cc1f30c00a6fb54e036c: Copied (new)
+2026/03/13 09:06:22 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/Database/LOCK: Updated modification time in destination
+2026/03/13 09:06:22 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33881.indexeddb.leveldb/000005.ldb: Updated modification time in destination
+2026/03/13 09:06:22 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33881.indexeddb.leveldb/CURRENT: Updated modification time in destination
+2026/03/13 09:06:22 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33881.indexeddb.leveldb/LOG: Updated modification time in destination
+2026/03/13 09:06:22 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33881.indexeddb.leveldb/LOCK: Updated modification time in destination
+2026/03/13 09:06:22 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_33881.indexeddb.leveldb/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:22 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/ScriptCache/2cc80dabc69f58b6_0: Updated modification time in destination
+2026/03/13 09:06:22 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/ScriptCache/4cb013792b196a35_0: Updated modification time in destination
+2026/03/13 09:06:22 INFO  : Systems/XSpace/.git/objects/8c/abb715457450c17efa258ed1f96e6ec695a554: Copied (new)
+2026/03/13 09:06:23 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SignalDB/LOCK: Updated modification time in destination
+2026/03/13 09:06:23 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SignalDB/LOG.old: Updated modification time in destination
+2026/03/13 09:06:23 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_36999.indexeddb.leveldb/000005.ldb: Updated modification time in destination
+2026/03/13 09:06:23 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SignalDB/LOG: Updated modification time in destination
+2026/03/13 09:06:23 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_36999.indexeddb.leveldb/000004.log: Updated modification time in destination
+2026/03/13 09:06:23 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_36999.indexeddb.leveldb/LOG: Updated modification time in destination
+2026/03/13 09:06:23 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_36999.indexeddb.leveldb/LOCK: Updated modification time in destination
+2026/03/13 09:06:23 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_36999.indexeddb.leveldb/CURRENT: Updated modification time in destination
+2026/03/13 09:06:23 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs/20260312_asset_animated_text_wellpath_landing_page_header_v1.0.0.gif: Copied (new)
+2026/03/13 09:06:24 INFO  : Systems/XSpace/.git/objects/92/450064f2d0b39ff9c157e17fcb646aff923159: Copied (new)
+2026/03/13 09:06:24 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_36999.indexeddb.leveldb/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:24 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/metadata/CURRENT: Updated modification time in destination
+2026/03/13 09:06:24 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SignalStorageConfigDB/LOG.old: Updated modification time in destination
+2026/03/13 09:06:24 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_45009.indexeddb.leveldb/000004.log: Updated modification time in destination
+2026/03/13 09:06:24 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SignalStorageConfigDB/LOG: Updated modification time in destination
+2026/03/13 09:06:24 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/metadata/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:24 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/metadata/LOCK: Updated modification time in destination
+2026/03/13 09:06:24 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Segmentation Platform/SignalStorageConfigDB/LOCK: Updated modification time in destination
+2026/03/13 09:06:25 INFO  : Systems/XSpace/.git/objects/93/5d0be4a87cce13e093a1b5d69f7f9a9206e5a7: Copied (new)
+2026/03/13 09:06:25 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_45009.indexeddb.leveldb/CURRENT: Updated modification time in destination
+2026/03/13 09:06:25 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_45009.indexeddb.leveldb/000005.ldb: Updated modification time in destination
+2026/03/13 09:06:25 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_45009.indexeddb.leveldb/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:25 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_45009.indexeddb.leveldb/LOG: Updated modification time in destination
+2026/03/13 09:06:25 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sync Data/LevelDB/CURRENT: Updated modification time in destination
+2026/03/13 09:06:25 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/ScriptCache/index: Updated modification time in destination
+2026/03/13 09:06:25 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shared Dictionary/cache/index: Updated modification time in destination
+2026/03/13 09:06:25 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_45009.indexeddb.leveldb/LOCK: Updated modification time in destination
+2026/03/13 09:06:25 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sync Data/LevelDB/LOCK: Updated modification time in destination
+2026/03/13 09:06:26 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sync Data/LevelDB/MANIFEST-000001: Updated modification time in destination
+2026/03/13 09:06:26 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Preferences: Copied (replaced existing)
+2026/03/13 09:06:26 INFO  : Systems/XSpace/.git/objects/94/e7d17af0549f61b89442a198072e47250ecd30: Copied (new)
+2026/03/13 09:06:27 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Reporting and NEL: Copied (replaced existing)
+2026/03/13 09:06:27 INFO  : 
+Transferred:   	   35.996 MiB / 60.290 MiB, 60%, 1.195 MiB/s, ETA 20s
+Errors:                 1 (retrying may help)
+Checks:              1256 / 1256, 100%, Listed 4271
+Transferred:           85 / 165, 52%
+Elapsed time:       1m0.0s
+Transferring:
+ * Portfolio/2026-wellpat….cache.dill.track.dill: 59% /58.599Mi, 1.397Mi/s, 16s
+ * Portfolio/2026-wellpat…tion/login_screen.dart:100% /19.976Ki, 19.975Ki/s, 0s
+ * Portfolio/2026-wellpat…ion/signup_screen.dart:100% /19.931Ki, 0/s, -
+ * Systems/XSpace/.git/ob…3983a349bccecc59529630:  0% /847, 0/s, -
+
+2026/03/13 09:06:27 INFO  : Portfolio/2026-wellpath/wellpath/lib/features/auth/presentation/login_screen.dart: Copied (replaced existing)
+2026/03/13 09:06:28 INFO  : Portfolio/2026-wellpath/wellpath/lib/features/auth/presentation/signup_screen.dart: Copied (replaced existing)
+2026/03/13 09:06:29 INFO  : Systems/XSpace/.git/objects/9a/ef311467830baa113983a349bccecc59529630: Copied (new)
+2026/03/13 09:06:29 INFO  : Portfolio/2026-wellpath/wellpath/lib/features/auth/presentation/widgets/auth_widgets.dart: Copied (replaced existing)
+2026/03/13 09:06:30 INFO  : Systems/XSpace/.git/objects/9e/62114f603666a8c289e164785b9462d7b2ccd6: Copied (new)
+2026/03/13 09:06:31 INFO  : Systems/XSpace/.git/objects/9f/77e341b7fd3b8e25e66116b720fda7231b840c: Copied (new)
+2026/03/13 09:06:32 INFO  : Systems/XSpace/.git/objects/a1/e5f073215dd2826a768283daf5a2b976aab6ed: Copied (new)
+2026/03/13 09:06:33 INFO  : Systems/XSpace/.git/objects/ab/611f21b4108b0c4b38018bbd7487b9ce473e6d: Copied (new)
+2026/03/13 09:06:34 INFO  : Systems/XSpace/.git/objects/c5/960e8518bf460da088ef91cb21d9cb65581a92: Copied (new)
+2026/03/13 09:06:35 INFO  : Systems/XSpace/.git/objects/c8/3982ed51de7d13ae0accc1cb681c5a2c437f39: Copied (new)
+2026/03/13 09:06:35 INFO  : Systems/XSpace/.git/objects/c8/60e403b68366f1a8f90b2315f39a7bea1ae458: Copied (new)
+2026/03/13 09:06:35 INFO  : Systems/XSpace/.git/objects/c8/e16ae2facd658b8fba7129beaddbea76f50687: Copied (new)
+2026/03/13 09:06:36 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shortcuts: Copied (replaced existing)
+2026/03/13 09:06:37 INFO  : Systems/XSpace/.git/objects/d2/ea3de05da794181baeb3566d9e017a37782f36: Copied (new)
+2026/03/13 09:06:39 INFO  : Systems/XSpace/.git/objects/d5/879633159d9d4d1a1b37a2dd142fa6b0989086: Copied (new)
+2026/03/13 09:06:40 INFO  : Systems/XSpace/.git/objects/e0/a136acddf17a29057deaf92d9174805007b3fc: Copied (new)
+2026/03/13 09:06:41 INFO  : Systems/XSpace/.git/objects/e6/9de29bb2d1d6434b8b29ae775ad8c2e48c5391: Copied (new)
+2026/03/13 09:06:41 INFO  : Systems/XSpace/.git/objects/e8/63b85df0c51e00d8e5f125f2812e1f994f8927: Copied (new)
+2026/03/13 09:06:43 INFO  : Systems/XSpace/.git/objects/ea/39437f781c20df0c864442f54182a785fa4415: Copied (new)
+2026/03/13 09:06:43 INFO  : Systems/XSpace/.git/objects/ed/62b2ded6840b3a5c7a8b632622eb50bbd66654: Copied (new)
+2026/03/13 09:06:44 INFO  : Portfolio/2026-wellpath/wellpath/build/8730b13ca0249799964d0a71255a8f3b.cache.dill.track.dill: Copied (replaced existing)
+2026/03/13 09:06:45 INFO  : Systems/XSpace/.git/objects/fc/3c3b5480f090e45063230d4074402eb96ede0c: Copied (new)
+2026/03/13 09:06:45 INFO  : Systems/XSpace/.git/objects/fc/a818422f9e140da086e5d26c011c48b17db456: Copied (new)
+2026/03/13 09:06:46 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/TransportSecurity: Copied (replaced existing)
+2026/03/13 09:06:46 INFO  : Systems/XSpace/.git/objects/fd/0e8486211ead36326b63a48159a9f94aef6084: Copied (new)
+2026/03/13 09:06:46 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Top Sites: Copied (replaced existing)
+2026/03/13 09:06:46 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Web Data: Copied (replaced existing)
+2026/03/13 09:06:47 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Scripts/LOG: Copied (replaced existing)
+2026/03/13 09:06:47 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Rules/LOG: Copied (replaced existing)
+2026/03/13 09:06:47 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension State/LOG.old: Copied (replaced existing)
+2026/03/13 09:06:47 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension State/LOG: Copied (replaced existing)
+2026/03/13 09:06:48 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/000003.log: Copied (replaced existing)
+2026/03/13 09:06:48 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/LOG.old: Copied (replaced existing)
+2026/03/13 09:06:48 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/LOG: Copied (replaced existing)
+2026/03/13 09:06:49 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/Encryption/LOG.old: Copied (replaced existing)
+2026/03/13 09:06:49 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/Encryption/LOG: Copied (replaced existing)
+2026/03/13 09:06:49 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Session Storage/000003.log: Copied (replaced existing)
+2026/03/13 09:06:49 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Session Storage/LOG.old: Copied (replaced existing)
+2026/03/13 09:06:50 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Session Storage/LOG: Copied (replaced existing)
+2026/03/13 09:06:50 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Local Storage/leveldb/000003.log: Copied (replaced existing)
+2026/03/13 09:06:51 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Local Storage/leveldb/LOG.old: Copied (replaced existing)
+2026/03/13 09:06:51 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Local Storage/leveldb/LOG: Copied (replaced existing)
+2026/03/13 09:06:51 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sessions/Session_13417833034711430: Copied (new)
+2026/03/13 09:06:52 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sessions/Session_13417834859177159: Copied (new)
+2026/03/13 09:06:52 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sessions/Tabs_13417833035305365: Copied (new)
+2026/03/13 09:06:52 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sessions/Tabs_13417835660390971: Copied (new)
+2026/03/13 09:06:53 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/000003.log: Copied (replaced existing)
+2026/03/13 09:06:53 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/000004.log: Copied (replaced existing)
+2026/03/13 09:06:53 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/LOG.old: Copied (replaced existing)
+2026/03/13 09:06:54 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/LOG: Copied (replaced existing)
+2026/03/13 09:06:54 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/MANIFEST-000001: Copied (replaced existing)
+2026/03/13 09:06:55 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Site Characteristics Database/000003.log: Copied (replaced existing)
+2026/03/13 09:06:55 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/WebStorage/QuotaManager: Copied (replaced existing)
+2026/03/13 09:06:55 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Site Characteristics Database/LOG.old: Copied (replaced existing)
+2026/03/13 09:06:55 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Site Characteristics Database/LOG: Copied (replaced existing)
+2026/03/13 09:06:57 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_41015.indexeddb.leveldb/000005.ldb: Copied (new)
+2026/03/13 09:06:57 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_41015.indexeddb.leveldb/000007.log: Copied (new)
+2026/03/13 09:06:57 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_41015.indexeddb.leveldb/CURRENT: Copied (new)
+2026/03/13 09:06:57 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_41015.indexeddb.leveldb/000008.ldb: Copied (new)
+2026/03/13 09:06:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_41015.indexeddb.leveldb/LOCK: Copied (new)
+2026/03/13 09:06:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_41015.indexeddb.leveldb/LOG.old: Copied (new)
+2026/03/13 09:06:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_41015.indexeddb.leveldb/LOG: Copied (new)
+2026/03/13 09:06:58 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_41015.indexeddb.leveldb/MANIFEST-000001: Copied (new)
+2026/03/13 09:06:59 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/Database/000003.log: Copied (replaced existing)
+2026/03/13 09:06:59 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/Database/LOG.old: Copied (replaced existing)
+2026/03/13 09:06:59 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/Database/LOG: Copied (replaced existing)
+2026/03/13 09:07:00 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_46205.indexeddb.leveldb/LOCK: Copied (new)
+2026/03/13 09:07:01 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_46205.indexeddb.leveldb/000003.log: Copied (new)
+2026/03/13 09:07:01 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_46205.indexeddb.leveldb/CURRENT: Copied (new)
+2026/03/13 09:07:01 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_46205.indexeddb.leveldb/LOG: Copied (new)
+2026/03/13 09:07:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_46205.indexeddb.leveldb/MANIFEST-000001: Copied (new)
+2026/03/13 09:07:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/ScriptCache/4cb013792b196a35_1: Copied (replaced existing)
+2026/03/13 09:07:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/metadata/LOG.old: Copied (replaced existing)
+2026/03/13 09:07:02 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/metadata/000003.log: Copied (replaced existing)
+2026/03/13 09:07:03 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/metadata/LOG: Copied (replaced existing)
+2026/03/13 09:07:03 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sync Data/LevelDB/LOG: Copied (replaced existing)
+2026/03/13 09:07:03 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sync Data/LevelDB/LOG.old: Copied (replaced existing)
+2026/03/13 09:07:03 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sync Data/LevelDB/000003.log: Copied (replaced existing)
+2026/03/13 09:07:04 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shared Dictionary/cache/index-dir/the-real-index: Copied (replaced existing)
+2026/03/13 09:07:04 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/ScriptCache/index-dir/the-real-index: Copied (replaced existing)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/ScriptCache/index-dir: Set directory modification time (using SetModTime)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shared Dictionary/cache/index-dir: Set directory modification time (using SetModTime)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shared Dictionary/cache: Set directory modification time (using SetModTime)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/lib/features/auth/presentation/widgets: Set directory modification time (using SetModTime)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store/Encryption: Set directory modification time (using SetModTime)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_41015.indexeddb.leveldb: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/Database: Set directory modification time (using SetModTime)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker/ScriptCache: Set directory modification time (using SetModTime)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Local Storage/leveldb: Set directory modification time (using SetModTime)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB/http_localhost_46205.indexeddb.leveldb: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:05 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db/metadata: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sync Data/LevelDB: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/IndexedDB: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Systems/XSpace/.git/logs/refs/remotes/origin: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/shared/objective_c: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Rules: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension State: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c/337ce265dc: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/GCM Store: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Extension Scripts: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets/animated-gifs: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Local Storage: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/lib/features/auth/presentation: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Shared Dictionary: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Session Storage: Set directory modification time (using SetModTime)
+2026/03/13 09:07:06 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Service Worker: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sessions: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/shared_proto_db: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Site Characteristics Database: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/Sync Data: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default/WebStorage: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Systems/XSpace/bash-space/.bashspace/logs/backups: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device/Default: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Systems/XSpace/.git/logs/refs/heads: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:07 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/shared: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner/objective_c: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets/assets: Set directory modification time (using SetModTime)
+2026/03/13 09:07:07 INFO  : Systems/XSpace/.git/refs/remotes/origin: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:07 INFO  : Systems/XSpace/.git/logs/refs/remotes: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:08 INFO  : Portfolio/2026-wellpath/wellpath/lib/features/auth: Set directory modification time (using SetModTime)
+2026/03/13 09:07:08 INFO  : Systems/XSpace/.git/objects/2c: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:08 INFO  : Systems/XSpace/.git/objects/17: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:08 INFO  : Systems/XSpace/.git/logs/refs: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/0e: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/27: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/0c: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/1e: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/2b: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/37: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/2f: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/46: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/3e: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/76: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/51: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/52: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/4c: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/79: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/7c: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/80: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/8c: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/92: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/93: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:09 INFO  : Systems/XSpace/.git/objects/94: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/9a: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/9e: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/9f: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/a1: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/d2: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/c8: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/ab: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/c5: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/d5: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/e0: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/e6: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/e8: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/ea: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/fc: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/ed: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:10 INFO  : Systems/XSpace/.git/objects/fd: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:11 INFO  : Systems/XSpace/.git/refs/heads: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:11 INFO  : Systems/XSpace/.git/refs/remotes: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:11 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/chrome-device: Set directory modification time (using SetModTime)
+2026/03/13 09:07:11 INFO  : Systems/XSpace/bash-space/.bashspace/logs: Set directory modification time (using SetModTime)
+2026/03/13 09:07:11 INFO  : Portfolio/2026-wellpath/wellpath/build/444a280e00c5b909654d1ee6a16ec31a: Set directory modification time (using SetModTime)
+2026/03/13 09:07:11 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool/hooks_runner: Set directory modification time (using SetModTime)
+2026/03/13 09:07:11 INFO  : Portfolio/2026-wellpath/wellpath/lib/features: Set directory modification time (using SetModTime)
+2026/03/13 09:07:11 INFO  : Portfolio/2026-wellpath/wellpath/build/flutter_assets: Set directory modification time (using SetModTime)
+2026/03/13 09:07:11 INFO  : Systems/XSpace/.git/info: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:11 INFO  : Systems/XSpace/git-space/.gitspace: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:11 INFO  : Systems/XSpace/.git/objects: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:11 INFO  : Systems/XSpace/.git/logs: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:11 INFO  : Systems/XSpace/bash-space/.bashspace: Set directory modification time (using SetModTime)
+2026/03/13 09:07:11 INFO  : Systems/XSpace/.git/refs: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:11 INFO  : Portfolio/2026-wellpath/wellpath/.dart_tool: Set directory modification time (using SetModTime)
+2026/03/13 09:07:11 INFO  : Systems/XSpace/.git/hooks: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:12 INFO  : Portfolio/2026-wellpath/wellpath/lib: Set directory modification time (using SetModTime)
+2026/03/13 09:07:12 INFO  : Systems/XSpace/git-space/bin: Set directory modification time (using SetModTime)
+2026/03/13 09:07:12 INFO  : Portfolio/2026-wellpath/wellpath/build: Set directory modification time (using SetModTime)
+2026/03/13 09:07:12 INFO  : Systems/XSpace/git-space: Set directory modification time (using SetModTime)
+2026/03/13 09:07:12 INFO  : Systems/XSpace/bash-space: Set directory modification time (using SetModTime)
+2026/03/13 09:07:12 INFO  : Portfolio/2026-wellpath/wellpath: Set directory modification time (using SetModTime)
+2026/03/13 09:07:12 INFO  : Systems/XSpace/.git: Set directory modification time (using DirSetModTime)
+2026/03/13 09:07:13 INFO  : Systems/XSpace: Set directory modification time (using SetModTime)
+2026/03/13 09:07:13 INFO  : Portfolio/2026-wellpath: Set directory modification time (using SetModTime)
+2026/03/13 09:07:13 INFO  : Portfolio: Set directory modification time (using SetModTime)
+2026/03/13 09:07:13 INFO  : Systems: Set directory modification time (using SetModTime)
+2026/03/13 09:07:13 ERROR : Attempt 1/3 failed with 1 errors and: Put "https://acexoft-my.sharepoint.com/personal/sconl_acexoft_com/_api/v2.0/drives/b!1gefhxeg-kexqWlU-vMFeyqYOBGHGz1GpnfWGpcTxJGAxJUq1827RqQ4fYNdIFU0/items/01DNNB3NBPTUNGO47NGBHK72NQ5WB6SRQH/uploadSession?guid='3f2484d1-7499-4016-8278-b0c92ceab0cc'&dc=0&tempauth=v1.eyJzaXRlaWQiOiI4NzlmMDdkNi1hMDE3LTQ3ZmEtYjFhOS02OTU0ZmFmMzA1N2IiLCJhcHBfZGlzcGxheW5hbWUiOiJyY2xvbmUiLCJhcHBpZCI6ImIxNTY2NWQ5LWVkYTYtNDA5Mi04NTM5LTBlZWMzNzZhZmQ1OSIsImF1ZCI6IjAwMDAwMDAzLTAwMDAtMGZmMS1jZTAwLTAwMDAwMDAwMDAwMC9hY2V4b2Z0LW15LnNoYXJlcG9pbnQuY29tQDIxMWYzMGFlLWVjNzctNDgzMC04NzlkLTQxZDkyMzEzOGMxYSIsImV4cCI6IjE3NzM0NjgzNjIifQ.CkAKDGVudHJhX2NsYWltcxIwQ1BqUHpzMEdFQUFhRm0xc2VUY3Rha1Y1VW10SFJWZDBZWFYxVld4R1FVRXFBQT09CjIKCmFjdG9yYXBwaWQSJDAwMDAwMDAzLTAwMDAtMDAwMC1jMDAwLTAwMDAwMDAwMDAwMAoKCgRzbmlkEgI2NhILCK7Hm7OUtIA_EAUaDTIwLjE5MC4xOTAuMzMqLGRnK0l1VXJIYmNQcDRJdGhxWVdUZjE0S0gwTEZBS0xGbTJ6NUtaWUZrNTg9MPgBOAFCEKH_f6IagADwwY5vWvbhTRxKEGhhc2hlZHByb29mdG9rZW5SCFsia21zaSJdaiQwMDExNmQwYS0zZTdiLWQ3ZTMtY2ExMy1mMTNkMDI5YzIxNDByKTBoLmZ8bWVtYmVyc2hpcHwxMDAzMjAwMmYwNzRiY2MyQGxpdmUuY29tegEyggESCa4wHyF37DBIEYedQdkjE4wakgEFU2NvbmyaAQVQZXRlcqIBEXNjb25sQGFjZXhvZnQuY29tqgEQMTAwMzIwMDJGMDc0QkNDMrIBRW15ZmlsZXMucmVhZCBhbGxmaWxlcy5yZWFkIG15ZmlsZXMud3JpdGUgYWxsZmlsZXMud3JpdGUgYWxsc2l0ZXMucmVhZMgBAQ.mjpzVJkx6CGjBAm1lS3O0EGtuf4Eagzpq6Nnaw58eEw": can't copy - source file is being updated (size changed from 211542 to 213391)
+2026/03/13 09:07:19 INFO  : Systems/XSpace/bash-space/.bashspace/logs/backups/20260313_backupx_rclone_copy_systems-engineer.log: Copied (replaced existing)
+2026/03/13 09:07:24 NOTICE: Systems/QSpace/2026-qspace-pages/pages/linux/flutter/ephemeral/.plugin_symlinks/path_provider_linux: Can't follow symlink without -L/--copy-links
+2026/03/13 09:07:26 NOTICE: Portfolio/2026-wellpath/wellpath/linux/flutter/ephemeral/.plugin_symlinks/path_provider_linux: Can't follow symlink without -L/--copy-links
+2026/03/13 09:07:27 INFO  : 
+Transferred:   	   60.558 MiB / 60.558 MiB, 100%, 390.665 KiB/s, ETA 0s
+Checks:              2217 / 2217, 100%, Listed 7785
+Transferred:          166 / 166, 100%
+Elapsed time:       2m0.0s
+
+2026/03/13 09:07:29 NOTICE: Systems/QSpace/2026-qspace-pages/pages/windows/flutter/ephemeral/.plugin_symlinks/path_provider_windows: Can't follow symlink without -L/--copy-links
+2026/03/13 09:07:30 NOTICE: Portfolio/2026-wellpath/wellpath/windows/flutter/ephemeral/.plugin_symlinks/cloud_firestore: Can't follow symlink without -L/--copy-links
+2026/03/13 09:07:30 NOTICE: Portfolio/2026-wellpath/wellpath/windows/flutter/ephemeral/.plugin_symlinks/firebase_auth: Can't follow symlink without -L/--copy-links
+2026/03/13 09:07:30 NOTICE: Portfolio/2026-wellpath/wellpath/windows/flutter/ephemeral/.plugin_symlinks/firebase_core: Can't follow symlink without -L/--copy-links
+2026/03/13 09:07:30 NOTICE: Portfolio/2026-wellpath/wellpath/windows/flutter/ephemeral/.plugin_symlinks/path_provider_windows: Can't follow symlink without -L/--copy-links
+2026/03/13 09:07:50 INFO  : Systems/XSpace/bash-space/.bashspace/logs/backups: Set directory modification time (using SetModTime)
+2026/03/13 09:07:50 INFO  : Systems/XSpace/bash-space/.bashspace/logs: Set directory modification time (using SetModTime)
+2026/03/13 09:07:51 INFO  : Systems/XSpace/bash-space/.bashspace: Set directory modification time (using SetModTime)
+2026/03/13 09:07:51 INFO  : Systems/XSpace/bash-space: Set directory modification time (using SetModTime)
+2026/03/13 09:07:52 INFO  : Systems/XSpace: Set directory modification time (using SetModTime)
+2026/03/13 09:07:52 INFO  : Systems: Set directory modification time (using SetModTime)
+2026/03/13 09:07:52 ERROR : Attempt 2/3 succeeded
+2026/03/13 09:07:52 INFO  : 
+Transferred:   	   60.558 MiB / 60.558 MiB, 100%, 390.665 KiB/s, ETA 0s
+Checks:              3167 / 3167, 100%, Listed 9783
+Transferred:          166 / 166, 100%
+Elapsed time:      2m24.8s
+
