@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# python/20260309_gradient_typing_effect_v0.1.0.py
+# animate-space/animate-text/python/gradient_typing_effect.py
 """
 Animated typing GIF generator with gradient text.
-Called directly or via _run/20260309_run_typing_effect_v0.1.0.sh.
+Called by x-space/lib/animatex.sh via 'animatex text'.
 
 Pass --brand <hex> to derive the gradient automatically (hue-shift + lighten).
 Pass --gradient1 / --gradient2 to set both stops manually.
@@ -11,10 +11,13 @@ Pass --gradient1 / --gradient2 to set both stops manually.
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
+#   v0.2.0 — Path comment updated to reflect monorepo location under
+#             animate-space/animate-text/python/; _ROOT_DIR now walks up
+#             two levels (python/ → animate-text/ → animate-space/) and
+#             OUTPUT_SUBDIR remains 'exports' one level up from python/.
 #   v0.1.0 — Refactor: all tunables moved into CONFIG block; output dir
 #             updated from generated-assets → exports; paths derived from
-#             config constants rather than hardcoded strings; comments rewritten
-#             to explain why, not what; file-path comment added to line 1.
+#             config constants; comments rewritten to explain why, not what.
 #   v0.0.0 — Initial release. Gradient typing GIF generator with --brand flag
 #             and fixed-baseline vertical rendering.
 # ─────────────────────────────────────────────────────────────────────────────
@@ -31,8 +34,6 @@ from PIL import Image, ImageDraw, ImageFont
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG — change values here, not inside the renderer
 # ─────────────────────────────────────────────────────────────────────────────
-# Single source of truth for every tunable. Need a wider canvas? Change WIDTH.
-# Renamed the output folder? Change OUTPUT_SUBDIR. Nothing else needs touching.
 
 # ── Canvas ────────────────────────────────────────────────────────────────────
 DEFAULT_WIDTH  = 1200
@@ -41,7 +42,7 @@ DEFAULT_HEIGHT = 200
 # ── Animation timing ──────────────────────────────────────────────────────────
 DEFAULT_FPS         = 24
 CHAR_DELAY          = 0.1   # seconds between each character appearing
-FADE_DURATION       = 0.3   # line fade-in at the start of each sentence
+FADE_DURATION       = 0.3   # line fade-in duration at the start of each sentence
 PAUSE_BETWEEN_LINES = 2.0   # hold time after the line finishes typing
 
 # ── Typography ────────────────────────────────────────────────────────────────
@@ -49,31 +50,33 @@ DEFAULT_FONT_FILENAME = "Poppins-Bold.ttf"
 DEFAULT_FONT_SIZE     = 64
 
 # ── Layout ────────────────────────────────────────────────────────────────────
-DEFAULT_ALIGNMENT  = "center"   # left | center | right
-MARGIN_HORIZONTAL  = 20         # padding used for left / right alignment
+DEFAULT_ALIGNMENT = "center"   # left | center | right
+MARGIN_HORIZONTAL = 20         # padding used for left / right alignment
 
 # ── Gradient defaults (ignored when --brand is supplied) ──────────────────────
 DEFAULT_GRADIENT_START = "#00C800"
 DEFAULT_GRADIENT_END   = "#B4FF00"
 
 # ── Brand → gradient transform (mirrors the Dart theme engine) ────────────────
-BRAND_HUE_SHIFT_DEG  = -6.0    # degrees to rotate hue for the start color
+BRAND_HUE_SHIFT_DEG  = -6.0    # degrees to rotate hue for the start stop
 BRAND_LIGHTEN_AMOUNT = 0.12    # how much lighter the start stop is vs the brand
 
-# ── Directory names (relative to project root) ────────────────────────────────
-OUTPUT_SUBDIR = "exports"   # renamed from generated-assets
+# ── Directory names ───────────────────────────────────────────────────────────
+# This file lives at animate-text/python/. Fonts and exports sit one level
+# up at animate-text/ — so we step up one directory from _SCRIPT_DIR.
+OUTPUT_SUBDIR = "exports"
 FONTS_SUBDIR  = "fonts"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PATHS — derived from config, not hardcoded inline
+# PATHS
 # ─────────────────────────────────────────────────────────────────────────────
-# python/ sits one level below the project root, so we step up one dir.
+# python/ is inside animate-text/. Fonts and exports are siblings of python/.
 
-_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-_ROOT_DIR   = os.path.normpath(os.path.join(_SCRIPT_DIR, ".."))
+_SCRIPT_DIR    = os.path.dirname(os.path.abspath(__file__))
+_ANIMATE_TEXT  = os.path.normpath(os.path.join(_SCRIPT_DIR, ".."))
 
-FONTS_DIR  = os.path.join(_ROOT_DIR, FONTS_SUBDIR)
-OUTPUT_DIR = os.path.join(_ROOT_DIR, OUTPUT_SUBDIR)
+FONTS_DIR  = os.path.join(_ANIMATE_TEXT, FONTS_SUBDIR)
+OUTPUT_DIR = os.path.join(_ANIMATE_TEXT, OUTPUT_SUBDIR)
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -94,7 +97,7 @@ def rgb_to_hex(rgb: Tuple[int, int, int]) -> str:
 def linear_gradient(
     c1: Tuple[int, int, int],
     c2: Tuple[int, int, int],
-    width: int
+    width: int,
 ):
     """Return a list of (r,g,b) tuples interpolated across `width` steps."""
     result = []
@@ -109,7 +112,7 @@ def linear_gradient(
 
 
 def ease_in_out(t: float) -> float:
-    """Smooth step — nicer than linear for fade-ins."""
+    """Smooth step — nicer than linear for the line fade-in."""
     t = max(0.0, min(1.0, t))
     return 3 * t * t - 2 * t * t * t
 
@@ -119,8 +122,7 @@ def compute_gradient_start_from_brand(brand_hex: str) -> Tuple[int, int, int]:
     Derive the gradient start color from the brand primary color.
 
     Mirrors the Dart theme computation:
-      - rotate hue by BRAND_HUE_SHIFT_DEG
-      - increase lightness by BRAND_LIGHTEN_AMOUNT
+      rotate hue by BRAND_HUE_SHIFT_DEG, increase lightness by BRAND_LIGHTEN_AMOUNT.
     The brand color itself becomes the gradient end.
     """
     h = brand_hex.strip().lstrip("#")
@@ -131,7 +133,6 @@ def compute_gradient_start_from_brand(brand_hex: str) -> Tuple[int, int, int]:
 
     # colorsys uses (h, l, s) order, all in [0, 1]
     hh, ll, ss = colorsys.rgb_to_hls(r, g, b)
-
     hh = ((hh * 360.0 + BRAND_HUE_SHIFT_DEG) % 360.0) / 360.0
     ll = min(1.0, ll + BRAND_LIGHTEN_AMOUNT)
 
@@ -146,7 +147,7 @@ def compute_gradient_start_from_brand(brand_hex: str) -> Tuple[int, int, int]:
 def load_font(font_filename: str, size: int):
     """
     Try the fonts dir first, then treat font_filename as an absolute path.
-    Falls back to PIL's default bitmap font — better than crashing.
+    Falls back to PIL's default bitmap font rather than crashing.
     """
     candidates = [
         os.path.join(FONTS_DIR, font_filename),
@@ -157,7 +158,6 @@ def load_font(font_filename: str, size: int):
             return ImageFont.truetype(path, size), path
         except Exception:
             pass
-
     return ImageFont.load_default(), "PIL-default"
 
 
@@ -166,7 +166,8 @@ def load_font(font_filename: str, size: int):
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Keyed by (line_idx, chars_visible, full_text, grad_start, grad_end).
-# Avoids re-rendering the same partial line on every frame.
+# Avoids re-rendering the same partial line on every frame at the same
+# character count — this is the main performance win for long lines.
 _render_cache: Dict[Tuple, Image.Image] = {}
 
 
@@ -179,10 +180,10 @@ def render_text_line(
     grad_end: Tuple[int, int, int],
 ) -> Image.Image:
     """
-    Render `text[:upto]` into a gradient-filled RGBA image.
+    Render text[:upto] into a gradient-filled RGBA image.
 
-    Vertical sizing is fixed to the full line's bounding box so the baseline
-    never shifts between frames — that was the "kick" bug in v0.0.0.
+    Vertical sizing is locked to the full line's bounding box so the baseline
+    never shifts between partial frames — that was the 'kick' bug in v0.0.0.
     """
     key = (line_idx, upto, text, grad_start, grad_end)
     if key in _render_cache:
@@ -190,23 +191,19 @@ def render_text_line(
 
     visible = text[:upto]
 
-    # Measure using a throwaway draw — ImageDraw.textbbox is cheap
     _tmp = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
     full_bbox = _tmp.textbbox((0, 0), text, font=font)
     vis_bbox  = _tmp.textbbox((0, 0), visible, font=font)
 
-    full_w = max(1, full_bbox[2] - full_bbox[0])
     full_h = max(1, full_bbox[3] - full_bbox[1])
     vis_w  = max(1, vis_bbox[2]  - vis_bbox[0])
 
-    # Gradient spans the visible width, height is locked to the full line height
     gradient = linear_gradient(grad_start, grad_end, vis_w)
     grad_img = Image.new("RGBA", (vis_w, full_h))
     gdraw = ImageDraw.Draw(grad_img)
     for x, color in enumerate(gradient):
         gdraw.line([(x, 0), (x, full_h)], fill=color)
 
-    # Mask: render the visible text into a grayscale image used as alpha
     mask = Image.new("L", (vis_w, full_h), 0)
     ImageDraw.Draw(mask).text(
         (-full_bbox[0], -full_bbox[1]),
@@ -215,7 +212,6 @@ def render_text_line(
         fill=255,
     )
 
-    # Punch the mask through the gradient
     out = Image.new("RGBA", (vis_w, full_h), (0, 0, 0, 0))
     out.paste(grad_img, (0, 0), mask)
 
@@ -232,7 +228,7 @@ def compute_x(text_width: int, canvas_width: int, alignment: str) -> int:
         return MARGIN_HORIZONTAL
     if alignment == "right":
         return canvas_width - text_width - MARGIN_HORIZONTAL
-    return (canvas_width - text_width) // 2   # center
+    return (canvas_width - text_width) // 2
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -249,9 +245,8 @@ def make_frame(
     grad_start: Tuple[int, int, int],
     grad_end: Tuple[int, int, int],
 ) -> Image.Image:
-    """Build a single RGBA frame for time offset `t` (seconds)."""
+    """Build a single RGBA frame for time offset t (seconds)."""
 
-    # Walk the timeline to find which line owns this moment
     elapsed = 0.0
     line_idx = len(text_lines) - 1
     local_t  = 0.0
@@ -269,7 +264,6 @@ def make_frame(
 
     line_img = render_text_line(line_idx, current_line, chars, font, grad_start, grad_end)
 
-    # Fade in at the start of each line
     alpha = ease_in_out(local_t / FADE_DURATION) if local_t < FADE_DURATION else 1.0
 
     canvas = Image.new("RGBA", (width, height), (0, 0, 0, 0))
@@ -326,7 +320,7 @@ def save_gif(frames: list, path: str, fps: int) -> None:
         duration=int(1000 / fps),
         loop=0,
         optimize=True,
-        disposal=2,   # clear to background between frames — required for transparency
+        disposal=2,   # clear to background each frame — required for transparency
     )
 
 
