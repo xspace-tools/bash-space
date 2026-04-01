@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# sys-space/bin/updatex
+#
+# Workstation system updater + XSpace repo updater.
+# Runs dnf upgrade, flatpak update, dnf autoremove, then optionally
+# pulls the latest xspace repo and re-runs install.sh.
+#
+# Workstation-specific — uses dnf (Fedora). Adapt for other distros.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────────────────────────────────────────
+#   v0.1.0 — Moved from x-space/bin/ to sys-space/bin/. Split into two
+#             modes: --system (dnf + flatpak) and --xspace (git pull +
+#             install). Default runs both. Added --help flag.
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BOOTSTRAP — find XSPACE_ROOT to call x-space/update.sh
+# ─────────────────────────────────────────────────────────────────────────────
+
+_REAL_BIN="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+SPACE_DIR="$(cd "$_REAL_BIN/.." && pwd)"    # sys-space/
+XSPACE_ROOT="$(cd "$SPACE_DIR/.." && pwd)"  # xspace/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────────────────────────────────────────
+
+_XSPACE_UPDATE_SCRIPT="$XSPACE_ROOT/x-space/update.sh"
+
+ok()  { echo "  ✓ $*"; }
+log() { echo "  → $*"; }
+hr()  { echo ""; echo "  ── $* ──────────────────────────────────────────────────"; }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELP
+# ─────────────────────────────────────────────────────────────────────────────
+
+usage() {
+    cat <<'HELP'
+
+  updatex — system + XSpace updater
+
+  USAGE
+    updatex                  run system update AND xspace repo update (default)
+    updatex --system         system packages only (dnf + flatpak)
+    updatex --xspace         xspace repo only (git pull + install.sh)
+    updatex --skip-pull      xspace install.sh only, no git pull
+    updatex --help
+
+  System update steps:
+    1. sudo dnf upgrade --refresh
+    2. flatpak update
+    3. sudo dnf autoremove
+
+  XSpace update steps:
+    1. git pull --ff-only origin main (from xspace repo root)
+    2. x-space/install.sh (re-wires all symlinks and PATH entries)
+
+HELP
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PARSE ARGS
+# ─────────────────────────────────────────────────────────────────────────────
+
+RUN_SYSTEM=true
+RUN_XSPACE=true
+SKIP_PULL=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --system)    RUN_XSPACE=false ;;
+        --xspace)    RUN_SYSTEM=false ;;
+        --skip-pull) SKIP_PULL=true   ;;
+        --help|-h)   usage; exit 0    ;;
+        *) echo "updatex: unknown option '$arg'"; usage; exit 1 ;;
+    esac
+done
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SYSTEM UPDATE (Fedora — dnf)
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ "$RUN_SYSTEM" == true ]]; then
+    hr "System update"
+
+    log "dnf upgrade..."
+    sudo dnf upgrade --refresh -y
+    ok "dnf upgrade complete"
+
+    log "flatpak update..."
+    flatpak update -y || warn "flatpak update failed (non-fatal)"
+    ok "flatpak update complete"
+
+    log "dnf autoremove..."
+    sudo dnf autoremove -y || true
+    ok "autoremove complete"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# XSPACE REPO UPDATE
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ "$RUN_XSPACE" == true ]]; then
+    hr "XSpace update"
+
+    if [[ ! -f "$_XSPACE_UPDATE_SCRIPT" ]]; then
+        echo "  ✗ x-space/update.sh not found at $_XSPACE_UPDATE_SCRIPT"
+        exit 1
+    fi
+
+    if [[ "$SKIP_PULL" == true ]]; then
+        exec "$_XSPACE_UPDATE_SCRIPT" --skip-pull
+    else
+        exec "$_XSPACE_UPDATE_SCRIPT"
+    fi
+fi
+
+echo ""
+ok "All done."

@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# sys-space/bin/refreshx
+#
+# Reload the shell configuration and clear the command hash cache.
+# Run after x-space/install.sh or after adding any new script to any
+# space's bin/ dir while in an existing terminal session.
+#
+# Workstation-specific — reloads the user's actual shell RC file.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────────────────────────────────────────
+#   v0.1.0 — Moved from x-space/bin/ to sys-space/bin/. Detects bash vs zsh.
+#             Added --help flag. Follows codespace conventions.
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────────────────────────────────────────
+
+_BASH_RC="$HOME/.bashrc"
+_ZSH_RC="$HOME/.zshrc"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELP
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    cat <<'HELP'
+
+  refreshx — reload shell config and clear command cache
+
+  USAGE
+    refreshx
+
+  What it does:
+    1. Sources ~/.bashrc (bash) or ~/.zshrc (zsh)
+    2. Runs hash -r to clear the command hash cache
+
+  Run this after:
+    - x-space/install.sh (new commands not yet on PATH in current session)
+    - Adding a script to any space's bin/ dir
+
+HELP
+    exit 0
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RELOAD
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ -n "${BASH_VERSION-}" ]]; then
+    # shellcheck source=/dev/null
+    source "$_BASH_RC"
+    hash -r
+    echo "Shell refreshed (bash — sourced $_BASH_RC)"
+elif [[ -n "${ZSH_VERSION-}" ]]; then
+    # shellcheck source=/dev/null
+    source "$_ZSH_RC"
+    hash -r
+    echo "Shell refreshed (zsh — sourced $_ZSH_RC)"
+else
+    echo "refreshx: unknown shell — please reload manually"
+    exit 1
+fi

@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+# backup-space/bin/backupx
+#
+# Multi-method backup orchestrator.
+# Reads backup jobs from backup-space/config/backups.conf and runs each one.
+#
+# Supported methods: rclone | rsync | tar
+# Supported modes:   copy (additive) | sync (mirror/delete)
+#
+# Logs each job to backup-space/logs/YYYYMMDD_backupx_method_mode_dest.log
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────────────────────────────────────────
+#   v0.2.0 — Moved from x-space/bin/ to backup-space/bin/. Fixed conf path:
+#             was hardcoded to $HOME/.../bash-space/.bashspace/backups.conf
+#             (broken after rename). Now uses readlink -f to resolve SPACE_DIR
+#             and reads conf from backup-space/config/backups.conf. Logs now
+#             at backup-space/logs/. Added --help, --list, --dry-run flags.
+#   v0.1.0 — Initial release.
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BOOTSTRAP — resolve SPACE_DIR so conf path is always correct
+# ─────────────────────────────────────────────────────────────────────────────
+# SPACE_DIR  = backup-space/   (one up from bin/)
+# XSPACE_ROOT = xspace/         (one further up)
+# This is why the old hardcoded path broke — the repo was renamed/moved.
+
+_REAL_BIN="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+SPACE_DIR="$(cd "$_REAL_BIN/.." && pwd)"
+XSPACE_ROOT="$(cd "$SPACE_DIR/.." && pwd)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────────────────────────────────────────
+
+CONF="$SPACE_DIR/config/backups.conf"
+LOG_DIR="$SPACE_DIR/logs"
+
+mkdir -p "$LOG_DIR"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────────────────────────────────────
+
+ok()   { echo "  ✓ $*"; }
+log()  { echo "  → $*"; }
+warn() { echo "  ⚠  $*"; }
+hr()   { echo ""; echo "  ── $* ──────────────────────────────────────────────────"; }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FLAGS
+# ─────────────────────────────────────────────────────────────────────────────
+
+DRY_RUN=false
+LIST_ONLY=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run|-n)  DRY_RUN=true; shift ;;
+        --list|-l)     LIST_ONLY=true; shift ;;
+        --help|-h)
+            cat <<'HELP'
+
+  backupx — multi-method backup orchestrator
+
+  USAGE
+    backupx              run all jobs in backup-space/config/backups.conf
+    backupx --list       list configured backup jobs (no execution)
+    backupx --dry-run    show what would run (no execution)
+    backupx --help
+
+  CONFIG
+    Edit: backup-space/config/backups.conf
+    Format: method|source|dest|options|mode
+
+    method : rclone | rsync | tar
+    mode   : copy (additive, no deletes) | sync (mirror, deletes extra)
+
+  EXAMPLES
+    rclone|/home/user/Docs|gdrive:Backups/Docs|--progress|sync
+    rsync|/home/user/Projects|server:/backups/projects|-avz --delete|sync
+    tar|/home/user/important|/mnt/usb/important.tar.gz|--exclude='.git'|copy
+
+  LOGS
+    backup-space/logs/YYYYMMDD_backupx_method_mode_dest.log
+
+HELP
+            exit 0
+            ;;
+        *) echo "backupx: unknown option '$1' — try --help"; exit 1 ;;
+    esac
+done
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PREFLIGHT
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ ! -f "$CONF" ]]; then
+    echo ""
+    echo "  ✗ backups.conf not found at $CONF"
+    echo ""
+    echo "  Create it by editing: $CONF"
+    echo "  An example file was placed there by install.sh."
+    echo ""
+    exit 1
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN LOOP
+# ─────────────────────────────────────────────────────────────────────────────
+
+echo ""
+echo "  backupx — starting at $(date)"
+echo "  conf   : $CONF"
+[[ "$DRY_RUN" == true ]]   && echo "  mode   : DRY RUN (nothing will run)"
+[[ "$LIST_ONLY" == true ]] && echo "  mode   : LIST ONLY"
+echo ""
+
+job_count=0
+skip_count=0
+
+while IFS='|' read -r method source dest options mode || [[ -n "${method:-}" ]]; do
+    # Strip leading/trailing whitespace from each field
+    method="${method//[[:space:]]/}"
+    mode="${mode//[[:space:]]/}"
+
+    # Skip comments and blank lines
+    [[ "${method:-}" =~ ^#.*$ ]] && continue
+    [[ -z "${method:-}" ]] && continue
+
+    (( ++job_count ))
+    dest_name="$(basename "$dest")"
+    date_prefix="$(date +'%Y%m%d')"
+    log_file="$LOG_DIR/${date_prefix}_backupx_${method}_${mode}_${dest_name}.log"
+
+    echo "  [$job_count] $method | $source → $dest | $mode"
+
+    if [[ "$LIST_ONLY" == true ]]; then
+        continue
+    fi
+
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "       [dry-run] would execute: $method $mode"
+        continue
+    fi
+
+    # shellcheck disable=SC2086
+    # options is intentionally unquoted — it may contain multiple flags
+    case "$method" in
+        rclone)
+            if ! command -v rclone &>/dev/null; then
+                warn "rclone not installed — skipping job $job_count"
+                (( ++skip_count )); continue
+            fi
+            case "$mode" in
+                copy) rclone copy $options "$source" "$dest" >> "$log_file" 2>&1 ;;
+                sync) rclone sync $options "$source" "$dest" >> "$log_file" 2>&1 ;;
+                *)    warn "Unknown mode '$mode' for rclone job — skipping"; (( ++skip_count )); continue ;;
+            esac
+            ;;
+        rsync)
+            if ! command -v rsync &>/dev/null; then
+                warn "rsync not installed — skipping job $job_count"
+                (( ++skip_count )); continue
+            fi
+            case "$mode" in
+                copy) rsync $options --ignore-existing "$source" "$dest" >> "$log_file" 2>&1 ;;
+                sync) rsync $options "$source" "$dest" >> "$log_file" 2>&1 ;;
+                *)    warn "Unknown mode '$mode' for rsync job — skipping"; (( ++skip_count )); continue ;;
+            esac
+            ;;
+        tar)
+            mkdir -p "$(dirname "$dest")"
+            tar czf "$dest" $options "$source" >> "$log_file" 2>&1
+            ;;
+        *)
+            warn "Unknown method '$method' — skipping job $job_count"
+            (( ++skip_count ))
+            continue
+            ;;
+    esac
+
+    ok "done → log: $(basename "$log_file")"
+
+done < "$CONF"
+
+echo ""
+if [[ "$LIST_ONLY" == true ]]; then
+    echo "  $job_count job(s) configured in backups.conf"
+elif [[ "$DRY_RUN" == true ]]; then
+    echo "  Dry run complete — $job_count job(s) would have run"
+else
+    echo "  All backups complete at $(date)"
+    (( skip_count > 0 )) && warn "$skip_count job(s) skipped — see warnings above"
+fi
+echo ""

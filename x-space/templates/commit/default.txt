@@ -1,4 +1,0 @@
-SUMMARY:
-
-- WHAT:
-- WHY:
