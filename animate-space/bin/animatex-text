@@ -2,7 +2,7 @@
 # animate-space/bin/animatex-text
 #
 # Direct shortcut for animated GIF generation.
-# Bypasses the type menu — goes straight to GIF prompt.
+# Sources the engine lib directly from animate-text/ — bypasses the menu.
 #
 # Usage:
 #   animatex-text                          interactive
@@ -12,8 +12,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v0.2.0 — Moved from x-space/bin/ to animate-space/bin/. SPACE_DIR
-#             resolves to animate-space/. Lib at animate-space/lib/.
+#   v0.3.0 — Engine lib path updated: now sources directly from
+#             animate-space/animate-text/animatex_text.sh (moved from lib/).
+#             Error message updated to reference _configure/install.sh.
+#   v0.2.0 — Moved from x-space/bin/ to animate-space/bin/.
 #   v0.1.0 — Initial release.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -24,15 +26,24 @@ SPACE_DIR="$(cd "$_REAL_BIN/.." && pwd)"
 XSPACE_ROOT="$(cd "$SPACE_DIR/.." && pwd)"
 
 CONF="$XSPACE_ROOT/xspace.conf"
-[[ ! -f "$CONF" ]] && echo "animatex-text: xspace.conf not found at $CONF" && exit 1
+if [[ ! -f "$CONF" ]]; then
+    echo "animatex-text: xspace.conf not found at $CONF"
+    echo "               Re-run _configure/install.sh"
+    exit 1
+fi
 source "$CONF"
 
-LIB="$SPACE_DIR/lib/animatex_text.sh"
-[[ ! -f "$LIB" ]] && echo "animatex-text: lib/animatex_text.sh not found" && exit 1
-source "$LIB"
+# Source directly from the engine's own directory
+ENGINE_LIB="$SPACE_DIR/animate-text/animatex_text.sh"
+if [[ ! -f "$ENGINE_LIB" ]]; then
+    echo "animatex-text: engine lib not found at $ENGINE_LIB"
+    echo "               Expected: animate-space/animate-text/animatex_text.sh"
+    exit 1
+fi
+source "$ENGINE_LIB"
 
 case "${1:-run}" in
     --help|-h|help)       animatex_text_help ;;
-    --version|-v|version) echo "animatex-text v0.2.0" ;;
+    --version|-v|version) echo "animatex-text v0.3.0" ;;
     *)                    animatex_text_run "$@" ;;
 esac

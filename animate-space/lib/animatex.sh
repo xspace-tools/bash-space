@@ -1,79 +1,177 @@
 #!/usr/bin/env bash
 # animate-space/lib/animatex.sh
 #
-# Router library for the animatex command.
+# Auto-discovering router for the animatex command suite.
 # Sourced by animate-space/bin/animatex — never run directly.
 #
-# This file's only job:
-#   1. Source animatex_text.sh and animatex_svg.sh from same lib/ dir
-#   2. Ask the user what they want to generate (or read --type from args)
-#   3. Delegate to the right library's run function
+# ── Engine convention ─────────────────────────────────────────────────────────
+# Each engine lives in animate-space/animate-{type}/animatex_{type}.sh
+# and must define:
+#
+#   _ANIMATEX_{TYPE}_LABEL   "Display name for menu"
+#   _ANIMATEX_{TYPE}_DESC    "One-line description shown under the name"
+#   _ANIMATEX_{TYPE}_ORDER   10   (lower = higher in menu; default 50)
+#
+#   animatex_{type}_run()   — interactive or direct generation
+#   animatex_{type}_help()  — full option reference
+#
+# Adding a new engine: create animate-space/animate-shape/animatex_shape.sh
+# with the vars and functions above. It appears in the menu automatically
+# on the next terminal open — nothing else needs changing.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v0.2.0 — Moved from x-space/lib/ to animate-space/lib/. BASH_SOURCE[0]
-#             now resolves to animate-space/lib/ — no other logic change.
-#   v0.1.0 — Initial router. Sources both sub-libs; type-selection menu.
+#   v0.4.0 — Fixed two critical bugs:
+#             Bug A: menu display text was going to stdout, captured by the
+#               $(...) command substitution in animatex_run, causing the entire
+#               menu to be stored in $type. Fix: all display output now goes
+#               to stderr (>&2); only the chosen type word goes to stdout.
+#             Bug B: find returned animate-svg before animate-text (alpha
+#               order), putting SVG first. Fix: _ANIMATEX_{TYPE}_ORDER metadata
+#               var controls sort position; text=10, svg=20 by default.
+#             UX: menu now shows numbered list with label + description before
+#               the prompt, not after. Prompt shows the range clearly.
+#   v0.3.0 — Complete rewrite as auto-discovering router.
+#   v0.2.0 — Moved from x-space/lib/ to animate-space/lib/.
+#   v0.1.0 — Initial router (hardcoded text + svg).
 # ─────────────────────────────────────────────────────────────────────────────
 
 [[ -n "${_ANIMATEX_LIB_LOADED:-}" ]] && return 0
 _ANIMATEX_LIB_LOADED=1
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SOURCE SUB-LIBRARIES
+# ENGINE DISCOVERY
 # ─────────────────────────────────────────────────────────────────────────────
-# Both libs live in the same dir as this file (animate-space/lib/).
-# Sourcing both upfront means animatex_text_run and animatex_svg_run are
-# available before the user selects a type — double-source guards are cheap.
 
-_AX_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-_AX_TEXT_LIB="$_AX_LIB_DIR/animatex_text.sh"
-_AX_SVG_LIB="$_AX_LIB_DIR/animatex_svg.sh"
+_AX_LIB_FILE="${BASH_SOURCE[0]}"
+_AX_SPACE_DIR="$(cd "$(dirname "$_AX_LIB_FILE")/.." && pwd)"
 
-if [[ ! -f "$_AX_TEXT_LIB" ]]; then
-    echo "animatex: animate-space/lib/animatex_text.sh not found"
-    echo "          Re-run x-space/install.sh"
-    return 1
-fi
-if [[ ! -f "$_AX_SVG_LIB" ]]; then
-    echo "animatex: animate-space/lib/animatex_svg.sh not found"
-    echo "          Re-run x-space/install.sh"
-    return 1
-fi
+# Parallel arrays — one slot per discovered engine
+_AX_ENGINE_TYPES=()
+_AX_ENGINE_LABELS=()
+_AX_ENGINE_DESCS=()
+_AX_ENGINE_ORDERS=()
 
-# shellcheck source=./animatex_text.sh
-source "$_AX_TEXT_LIB"
-# shellcheck source=./animatex_svg.sh
-source "$_AX_SVG_LIB"
+_ax_discover_engines() {
+    # Collect all engine lib paths, then sort by ORDER number so the menu
+    # respects the engine's preferred position rather than filesystem order.
+
+    local engine_lib type upper_type label_var desc_var order_var
+    local -a found_types=() found_libs=() found_orders=()
+
+    while IFS= read -r engine_lib; do
+        [[ -f "$engine_lib" ]] || continue
+
+        type="$(basename "$engine_lib" .sh)"   # animatex_text
+        type="${type#animatex_}"               # text
+
+        # shellcheck source=/dev/null
+        source "$engine_lib"
+
+        upper_type="${type^^}"
+        label_var="_ANIMATEX_${upper_type}_LABEL"
+        desc_var="_ANIMATEX_${upper_type}_DESC"
+        order_var="_ANIMATEX_${upper_type}_ORDER"
+
+        found_types+=("$type")
+        found_libs+=("$engine_lib")
+        found_orders+=("${!order_var:-50}")
+
+    done < <(find "$_AX_SPACE_DIR" -path "*/animate-*/animatex_*.sh" | sort)
+
+    if [[ ${#found_types[@]} -eq 0 ]]; then
+        echo "animatex: no engines found in animate-space/animate-*/" >&2
+        echo "          Expected files: animate-*/animatex_*.sh" >&2
+        return 1
+    fi
+
+    # Sort by ORDER number (simple insertion sort — N is always tiny)
+    local n="${#found_types[@]}"
+    for (( i=1; i<n; i++ )); do
+        local key_type="${found_types[$i]}"
+        local key_order="${found_orders[$i]}"
+        local j=$(( i - 1 ))
+        while (( j >= 0 )) && (( found_orders[j] > key_order )); do
+            found_types[$((j+1))]="${found_types[$j]}"
+            found_orders[$((j+1))]="${found_orders[$j]}"
+            (( j-- ))
+        done
+        found_types[$((j+1))]="$key_type"
+        found_orders[$((j+1))]="$key_order"
+    done
+
+    # Populate the final ordered arrays with metadata
+    for type in "${found_types[@]}"; do
+        upper_type="${type^^}"
+        label_var="_ANIMATEX_${upper_type}_LABEL"
+        desc_var="_ANIMATEX_${upper_type}_DESC"
+        _AX_ENGINE_TYPES+=("$type")
+        _AX_ENGINE_LABELS+=("${!label_var:-$type}")
+        _AX_ENGINE_DESCS+=("${!desc_var:-}")
+    done
+}
+
+_ax_discover_engines || return 1
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TYPE SELECTION MENU
 # ─────────────────────────────────────────────────────────────────────────────
+# ⚠ CRITICAL: ALL output here goes to stderr (>&2).
+# This function is called as: type="$(_ax_pick_type)"
+# Command substitution $(...) captures stdout. If the menu prints to stdout,
+# the entire menu text ends up stored in $type instead of the user's choice.
+# Only the final "echo $chosen" goes to stdout — that's the return value.
+
+_ax_print_menu() {
+    local n="${#_AX_ENGINE_TYPES[@]}"
+    echo "" >&2
+    echo "  ╭─────────────────────────────────────────────────────────╮" >&2
+    echo "  │  animatex — animated asset generator                    │" >&2
+    echo "  ╰─────────────────────────────────────────────────────────╯" >&2
+    echo "" >&2
+
+    local i
+    for (( i=0; i<n; i++ )); do
+        printf "  %d)  %s\n" $(( i + 1 )) "${_AX_ENGINE_LABELS[$i]}" >&2
+        if [[ -n "${_AX_ENGINE_DESCS[$i]:-}" ]]; then
+            printf "       %s\n" "${_AX_ENGINE_DESCS[$i]}" >&2
+        fi
+        echo "" >&2
+    done
+}
 
 _ax_pick_type() {
-    echo ""
-    echo "  animatex — what would you like to generate?"
-    echo ""
-    echo "    1)  Gradient typing GIF"
-    echo "        Animated .gif — raster, pixel-perfect, plays anywhere"
-    echo "        Output: animate-text/exports/"
-    echo ""
-    echo "    2)  SVG / HTML animation"
-    echo "        Animated .svg or .html — scalable, no Pillow needed,"
-    echo "        transparent background, embeds in any webpage"
-    echo "        Output: animate-svg/exports/"
-    echo ""
-    read -rp "  Select [1/2]: " _sel
+    local n="${#_AX_ENGINE_TYPES[@]}"
 
-    case "${_sel:-}" in
-        1|t|text|gif)  echo "text" ;;
-        2|s|svg|html)  echo "svg"  ;;
-        *)
-            echo "  Please enter 1 (GIF) or 2 (SVG/HTML)." >&2
-            _ax_pick_type
-            ;;
-    esac
+    _ax_print_menu
+
+    local _sel chosen=""
+    while true; do
+        # Prompt goes to stderr too — read -p writes its prompt to stderr by default
+        read -rp "  Select [1-${n}]: " _sel >&2
+
+        # Accept a number
+        if [[ "$_sel" =~ ^[0-9]+$ ]] && (( _sel >= 1 && _sel <= n )); then
+            chosen="${_AX_ENGINE_TYPES[$(( _sel - 1 ))]}"
+            break
+        fi
+
+        # Accept a type name directly (power-user path)
+        local t
+        for t in "${_AX_ENGINE_TYPES[@]}"; do
+            if [[ "$_sel" == "$t" ]]; then
+                chosen="$t"
+                break 2
+            fi
+        done
+
+        # Invalid — re-prompt without reprinting the full menu
+        echo "  Please enter a number between 1 and ${n}." >&2
+    done
+
+    # stdout only — this is the return value captured by $()
+    echo "$chosen"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -92,50 +190,62 @@ animatex_run() {
         esac
     done
 
+    # No --type → show interactive menu
     if [[ -z "$type" ]]; then
         type="$(_ax_pick_type)"
+        # Blank line between menu and the engine's own prompt
+        echo "" >&2
     fi
 
-    case "$type" in
-        text|gif|1) animatex_text_run "${remaining[@]+"${remaining[@]}"}" ;;
-        svg|html|2) animatex_svg_run  "${remaining[@]+"${remaining[@]}"}" ;;
-        *)
-            echo "animatex: unknown type '${type}'. Use: --type text  or  --type svg"
-            return 1
-            ;;
-    esac
+    # Validate
+    local found=0 t
+    for t in "${_AX_ENGINE_TYPES[@]}"; do
+        [[ "$t" == "$type" ]] && found=1 && break
+    done
+
+    if (( found == 0 )); then
+        echo "animatex: unknown type '${type}'" >&2
+        echo "          Available: ${_AX_ENGINE_TYPES[*]}" >&2
+        return 1
+    fi
+
+    "animatex_${type}_run" "${remaining[@]+"${remaining[@]}"}"
 }
 
 animatex_help() {
+    local n="${#_AX_ENGINE_TYPES[@]}"
+
     cat <<'HELP'
 
   animatex — animated asset generator
 
   USAGE
-    animatex                            interactive — prompts for type then options
-    animatex --type text [options]      skip menu, go straight to GIF prompt
-    animatex --type svg  [options]      skip menu, go straight to SVG prompt
+    animatex                            interactive menu
+    animatex --type <type> [options]    skip menu, go straight to prompt
     animatex --help
     animatex --version
 
-  TYPES
-    text / gif    Animated typing GIF with gradient text (requires Pillow)
-                  Output: animate-space/animate-text/exports/*.gif
+HELP
 
-    svg / html    Animated typing SVG or HTML (stdlib only — no Pillow needed)
-                  Output: animate-space/animate-svg/exports/*.svg or *.html
+    echo "  AVAILABLE TYPES"
+    echo ""
+    local i
+    for (( i=0; i<n; i++ )); do
+        printf "    %-8s  %s\n" "${_AX_ENGINE_TYPES[$i]}" "${_AX_ENGINE_LABELS[$i]}"
+        [[ -n "${_AX_ENGINE_DESCS[$i]:-}" ]] && \
+            printf "    %-8s  %s\n" "" "${_AX_ENGINE_DESCS[$i]}"
+    done
 
-  SHORTCUTS (bypass the type menu)
-    animatex-text [options]
-    animatex-svg  [options]
+    cat <<'HELP'
+
+  SHORTCUTS
+    animatex-text [options]     direct GIF generation
+    animatex-svg  [options]     direct SVG/HTML generation
 
   EXAMPLES
+    animatex
     animatex --type text --brand "#FF6B00" --text "Launch|Live" --project acme
     animatex --type svg  --brand "#5C3BFF" --text "Hello|World" --format html
-
-  Full option lists:
-    animatex-text --help
-    animatex-svg  --help
 
 HELP
 }

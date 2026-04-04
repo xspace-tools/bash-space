@@ -1,31 +1,34 @@
 #!/usr/bin/env bash
-# animate-space/lib/animatex_text.sh
+# animate-space/animate-text/animatex_text.sh
 #
-# All shell logic for animatex-text (animated GIF generation).
-# Sourced by animate-space/bin/animatex-text and animate-space/lib/animatex.sh
-# — never run directly.
-#
-# Expects XSPACE_ROOT and all xspace.conf vars to be set by the caller.
-#
-# Public API:
-#   animatex_text_run    — routes interactive vs direct mode
-#   animatex_text_help   — prints usage
+# Engine library for animated GIF generation.
+# Sourced by animate-space/lib/animatex.sh (auto-discovered) and by
+# animate-space/bin/animatex-text (direct shortcut).
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v0.2.0 — Moved from x-space/lib/ to animate-space/lib/. Path comment
-#             updated. xspace.conf var names updated to ANIMATEX_TEXT_*.
-#             No logic changes.
-#   v0.1.0 — Initial release. Extracted from _run/run_typing_effect.sh.
-#             Interactive + direct-passthrough mode. _axt_ prefix convention.
+#   v0.4.0 — Added _ANIMATEX_TEXT_ORDER=10 so this engine sorts before SVG
+#             in the menu (alphabetically svg < text, so without ORDER the
+#             SVG engine was appearing first). No logic changes.
+#   v0.3.0 — Moved into animate-text/. Added LABEL + DESC metadata.
+#   v0.2.0 — Moved from x-space/lib/.
+#   v0.1.0 — Initial release.
 # ─────────────────────────────────────────────────────────────────────────────
 
 [[ -n "${_ANIMATEX_TEXT_LIB_LOADED:-}" ]] && return 0
 _ANIMATEX_TEXT_LIB_LOADED=1
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CONFIG — interactive prompt defaults
+# ENGINE METADATA
+# ─────────────────────────────────────────────────────────────────────────────
+
+_ANIMATEX_TEXT_LABEL="Gradient typing GIF"
+_ANIMATEX_TEXT_DESC="Animated .gif — pixel-perfect, plays anywhere (email, Slack, GitHub)"
+_ANIMATEX_TEXT_ORDER=10   # lower = higher in menu
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 
 _AXT_DEFAULT_VERSION="1.0.0"
@@ -39,12 +42,12 @@ _AXT_DEFAULT_FPS=24
 # ─────────────────────────────────────────────────────────────────────────────
 # PATH RESOLUTION
 # ─────────────────────────────────────────────────────────────────────────────
-# Called at runtime — XSPACE_ROOT guaranteed set by caller at that point.
 
 _axt_resolve_paths() {
-    _AXT_ENGINE="$XSPACE_ROOT/$ANIMATEX_TEXT_SCRIPT"
-    _AXT_FONTS_DIR="$XSPACE_ROOT/$ANIMATEX_TEXT_FONTS_DIR"
-    _AXT_EXPORTS_DIR="$XSPACE_ROOT/$ANIMATEX_TEXT_EXPORTS_DIR"
+    _AXT_ENGINE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    _AXT_ENGINE="$_AXT_ENGINE_DIR/python/gradient_typing_effect.py"
+    _AXT_FONTS_DIR="$_AXT_ENGINE_DIR/fonts"
+    _AXT_EXPORTS_DIR="$_AXT_ENGINE_DIR/exports"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -53,27 +56,29 @@ _axt_resolve_paths() {
 
 _axt_check_python() {
     if ! command -v python3 &>/dev/null; then
-        echo "animatex-text: python3 required but not found."
-        echo "               Install Python 3.8+ and re-run _configure/install.sh"
+        echo "  ✗ python3 not found — install Python 3.8+ and re-run _configure/install.sh"
         return 1
     fi
     if ! python3 -c "import PIL" &>/dev/null; then
-        echo "animatex-text: Pillow not installed."
-        echo "               Run: pip install pillow --break-system-packages"
+        echo "  ✗ Pillow not installed"
+        echo "    Run: pip install pillow --break-system-packages"
         return 1
     fi
 }
 
 _axt_check_engine() {
     if [[ ! -f "$_AXT_ENGINE" ]]; then
-        echo "animatex-text: engine not found: $_AXT_ENGINE"
+        echo "  ✗ Python engine not found at $_AXT_ENGINE"
+        echo "    Expected: animate-text/python/gradient_typing_effect.py"
         return 1
     fi
 }
 
 _axt_check_fonts() {
     if [[ ! -d "$_AXT_FONTS_DIR" ]] || [[ -z "$(ls -A "$_AXT_FONTS_DIR" 2>/dev/null)" ]]; then
-        echo "  ⚠  No fonts in $_AXT_FONTS_DIR — PIL fallback will be used"
+        echo "  ⚠  No fonts in $_AXT_FONTS_DIR"
+        echo "     Falling back to PIL's built-in bitmap font."
+        echo "     Copy .ttf/.otf files there for custom fonts."
         echo ""
     fi
 }
@@ -90,21 +95,20 @@ h = sys.argv[1]
 try:
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
 except Exception:
-    print("  (invalid hex)"); sys.exit(0)
-print(f"  #{h.upper()}  \033[48;2;{r};{g};{b}m        \033[0m")
+    print("  (invalid hex — skipping preview)"); sys.exit(0)
+print(f"  #{h.upper()}  \033[48;2;{r};{g};{b}m          \033[0m")
 PY
 }
 
-# Mutates global VERSION in-place — subshells can't propagate changes back
 _axt_bump_version() {
     local ver="$1"
     [[ ! "$ver" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] && return 0
     local major="${BASH_REMATCH[1]}" minor="${BASH_REMATCH[2]}" patch="${BASH_REMATCH[3]}"
-    echo "  1) patch  →  $major.$minor.$((patch + 1))"
-    echo "  2) minor  →  $major.$((minor + 1)).0"
-    echo "  3) major  →  $((major + 1)).0.0"
-    echo "  4) keep   →  $ver"
-    read -rp "  Select [1-4] (default: 1): " sel; sel="${sel:-1}"
+    echo "    1)  patch  →  $major.$minor.$((patch + 1))   small fix"
+    echo "    2)  minor  →  $major.$((minor + 1)).0       new feature"
+    echo "    3)  major  →  $((major + 1)).0.0            breaking change"
+    echo "    4)  keep   →  $ver"
+    read -rp "    Select [1-4] (default 1): " sel; sel="${sel:-1}"
     case "$sel" in
         1|p) VERSION="$major.$minor.$((patch + 1))" ;;
         2|m) VERSION="$major.$((minor + 1)).0"      ;;
@@ -120,12 +124,17 @@ _axt_pick_font() {
             -printf '%f\n' 2>/dev/null | sort
     )
     if [[ ${#_AXT_FONTS[@]} -eq 0 ]]; then
-        read -rp "  No fonts found. Enter system font path: " FONTFILE; return 0
+        read -rp "  No fonts found — enter system font path: " FONTFILE
+        return 0
     fi
     echo ""
     echo "  Available fonts:"
-    for i in "${!_AXT_FONTS[@]}"; do printf "    %3d) %s\n" $((i+1)) "${_AXT_FONTS[$i]}"; done
-    read -rp "  Select [${_AXT_FONTS[0]}]: " sel
+    local i
+    for i in "${!_AXT_FONTS[@]}"; do
+        printf "    %3d)  %s\n" $((i+1)) "${_AXT_FONTS[$i]}"
+    done
+    echo ""
+    read -rp "  Select font [1 = ${_AXT_FONTS[0]}]: " sel
     if [[ -z "$sel" ]]; then
         FONTFILE="${_AXT_FONTS[0]}"
     elif [[ "$sel" =~ ^[0-9]+$ ]] && (( sel >= 1 && sel <= ${#_AXT_FONTS[@]} )); then
@@ -145,51 +154,90 @@ _axt_run_engine() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 _axt_interactive() {
+    echo "  ─────────────────────────────────────────────────────────"
+    echo "  animatex-text — animated gradient typing GIF"
+    echo "  ─────────────────────────────────────────────────────────"
     echo ""
-    echo "  animatex-text — animated GIF generator"
-    echo "  ────────────────────────────────────────"
 
+    # ── Project meta ──────────────────────────────────────────────────────────
     read -ep "  Project name: " PROJECT;  PROJECT="${PROJECT:-project}"
-    read -ep "  Version [$_AXT_DEFAULT_VERSION]: " VERSION; VERSION="${VERSION:-$_AXT_DEFAULT_VERSION}"
+    echo ""
+
+    read -ep "  Version [$_AXT_DEFAULT_VERSION]: " VERSION
+    VERSION="${VERSION:-$_AXT_DEFAULT_VERSION}"
 
     read -rp "  Bump version? (y/N): " _b
-    [[ "$_b" =~ ^[Yy]$ ]] && _axt_bump_version "$VERSION" && echo "  → $VERSION"
+    if [[ "$_b" =~ ^[Yy]$ ]]; then
+        echo ""
+        _axt_bump_version "$VERSION"
+        echo "  → $VERSION"
+    fi
+    echo ""
 
-    echo ""; echo "  Sentences (blank line to finish):"
+    # ── Text content ──────────────────────────────────────────────────────────
+    echo "  Enter sentences — one per line, blank line to finish:"
     _LINES=()
-    while IFS= read -r _l; do [[ -z "$_l" ]] && break; _LINES+=("$_l"); done
-    [[ ${#_LINES[@]} -eq 0 ]] && _LINES=("Hello world" "Animated gradient text")
+    while IFS= read -r _l; do
+        [[ -z "$_l" ]] && break
+        _LINES+=("$_l")
+    done
+    if [[ ${#_LINES[@]} -eq 0 ]]; then
+        _LINES=("Hello world" "Animated gradient text")
+        echo "  (no input — using sample text)"
+    fi
     TEXT="$(IFS='|'; echo "${_LINES[*]}")"
+    echo ""
 
-    read -ep "  Brand color [$_AXT_DEFAULT_BRAND]: " BRAND; BRAND="${BRAND:-$_AXT_DEFAULT_BRAND}"
-    echo "  Preview:"; _axt_preview_hex "$BRAND"
+    # ── Brand & gradient ──────────────────────────────────────────────────────
+    read -ep "  Brand color (hex) [$_AXT_DEFAULT_BRAND]: " BRAND
+    BRAND="${BRAND:-$_AXT_DEFAULT_BRAND}"
+    _axt_preview_hex "$BRAND"
+    echo ""
 
+    # ── Layout ────────────────────────────────────────────────────────────────
     read -ep "  Alignment (left/center/right) [$_AXT_DEFAULT_ALIGN]: " ALIGN
     ALIGN="${ALIGN:-$_AXT_DEFAULT_ALIGN}"
-    read -ep "  Width  [$_AXT_DEFAULT_WIDTH]: "  WIDTH;   WIDTH="${WIDTH:-$_AXT_DEFAULT_WIDTH}"
-    read -ep "  Height [$_AXT_DEFAULT_HEIGHT]: " HEIGHT;  HEIGHT="${HEIGHT:-$_AXT_DEFAULT_HEIGHT}"
 
+    read -ep "  Canvas width  [$_AXT_DEFAULT_WIDTH px]: "  WIDTH
+    WIDTH="${WIDTH:-$_AXT_DEFAULT_WIDTH}"
+
+    read -ep "  Canvas height [$_AXT_DEFAULT_HEIGHT px]: " HEIGHT
+    HEIGHT="${HEIGHT:-$_AXT_DEFAULT_HEIGHT}"
+    echo ""
+
+    # ── Font ──────────────────────────────────────────────────────────────────
     _axt_check_fonts
     _axt_pick_font
-
-    read -ep "  Font size [$_AXT_DEFAULT_FONTSIZE]: " FONTSIZE; FONTSIZE="${FONTSIZE:-$_AXT_DEFAULT_FONTSIZE}"
-    read -ep "  FPS [$_AXT_DEFAULT_FPS]: " FPS; FPS="${FPS:-$_AXT_DEFAULT_FPS}"
-
-    local DATE; DATE="$(date +%Y%m%d)"
-
     echo ""
-    echo "  ──────────────────────────────────────────────────────"
-    echo "  Project : $PROJECT v$VERSION  ($DATE)"
-    echo "  Text    : $TEXT"
-    echo "  Brand   : $BRAND"
-    echo "  Canvas  : ${WIDTH}×${HEIGHT} @ ${FPS}fps  align: $ALIGN"
-    echo "  Font    : $FONTFILE @ ${FONTSIZE}px"
-    echo "  Output  : $_AXT_EXPORTS_DIR/"
-    echo "  ──────────────────────────────────────────────────────"
+
+    read -ep "  Font size [$_AXT_DEFAULT_FONTSIZE px]: " FONTSIZE
+    FONTSIZE="${FONTSIZE:-$_AXT_DEFAULT_FONTSIZE}"
+
+    read -ep "  FPS [$_AXT_DEFAULT_FPS]: " FPS
+    FPS="${FPS:-$_AXT_DEFAULT_FPS}"
+    echo ""
+
+    # ── Summary ───────────────────────────────────────────────────────────────
+    local DATE; DATE="$(date +%Y%m%d)"
+    local OUTFILE="${DATE}_asset_animated_text_${PROJECT}_v${VERSION}.gif"
+
+    echo "  ─────────────────────────────────────────────────────────"
+    echo "  Project  :  $PROJECT  v$VERSION  ($DATE)"
+    echo "  Text     :  $TEXT"
+    echo "  Brand    :  $BRAND"
+    echo "  Canvas   :  ${WIDTH}×${HEIGHT} px  @  ${FPS} fps  ·  $ALIGN"
+    echo "  Font     :  $FONTFILE  @  ${FONTSIZE} px"
+    echo "  Output   :  $_AXT_EXPORTS_DIR/$OUTFILE"
+    echo "  ─────────────────────────────────────────────────────────"
+    echo ""
 
     read -rp "  Generate? (y/N): " CONFIRM
-    [[ ! "$CONFIRM" =~ ^[Yy]$ ]] && echo "  Cancelled." && return 0
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+        echo "  Cancelled."
+        return 0
+    fi
 
+    echo ""
     _axt_run_engine \
         --text "$TEXT" --brand "$BRAND" --align "$ALIGN" \
         --width "$WIDTH" --height "$HEIGHT" \
@@ -210,6 +258,10 @@ animatex_text_run() {
         _axt_interactive; return $?
     fi
 
+    if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+        animatex_text_help; return 0
+    fi
+
     _axt_check_fonts
     _axt_run_engine "$@"
 }
@@ -220,9 +272,9 @@ animatex_text_help() {
   animatex-text — animated typing GIF with gradient text
 
   USAGE
-    animatex-text                          interactive
+    animatex-text                          interactive (prompts for everything)
     animatex-text --interactive / -i       same
-    animatex-text [options]                direct / scriptable
+    animatex-text [options]                direct / scriptable (no prompts)
 
   OPTIONS
     --text       "Line 1|Line 2"    pipe-separated sentences
@@ -236,11 +288,16 @@ animatex_text_help() {
     --fontsize   64                 font size px
     --fps        24                 frames per second
     --project    project            output filename slug
-    --version    0.0.0              output filename version
+    --version    0.0.0              semver string
     --date       YYYYMMDD           date prefix (default: today)
 
   OUTPUT
-    animate-space/animate-text/exports/{date}_asset_animated_text_{project}_v{version}.gif
+    animate-text/exports/YYYYMMDD_asset_animated_text_{project}_v{version}.gif
+
+  EXAMPLES
+    animatex-text
+    animatex-text --brand "#FF6B00" --text "Launch|Live" --project acme
+    animatex-text --font "Barlow-BlackItalic.ttf" --fontsize 96 --brand "#5C3BFF"
 
 HELP
 }

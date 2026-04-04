@@ -2,9 +2,11 @@
 # animate-space/bin/animatex
 #
 # Primary entry point for all animatex tools.
-# Type 'animatex' and you'll be asked what you want to generate.
+# Sources lib/animatex.sh which auto-discovers all available engine types
+# and presents a menu. Adding a new animate-* engine dir makes it appear
+# in the menu automatically — no changes needed here.
 #
-# Direct usage (skips the type menu):
+# Direct usage (skips the menu):
 #   animatex --type text [options]
 #   animatex --type svg  [options]
 #   animatex --help
@@ -13,9 +15,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v0.4.0 — Moved from x-space/bin/ to animate-space/bin/. SPACE_DIR now
-#             resolves to animate-space/ (one up from bin/). XSPACE_ROOT is
-#             one further up. Lib sourced from animate-space/lib/.
+#   v0.5.0 — Error messages updated to reference _configure/install.sh.
+#             No bootstrap logic changes — lib/animatex.sh now handles all
+#             engine discovery internally.
+#   v0.4.0 — Moved from x-space/bin/ to animate-space/bin/.
 #   v0.3.0 — Single entry point with type-selection menu.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -24,9 +27,8 @@ set -euo pipefail
 # ─────────────────────────────────────────────────────────────────────────────
 # BOOTSTRAP
 # ─────────────────────────────────────────────────────────────────────────────
-# readlink -f resolves the ~/bin symlink so path walk always succeeds.
 # SPACE_DIR  = animate-space/   (one up from bin/)
-# XSPACE_ROOT = xspace/          (one further up — where xspace.conf lives)
+# XSPACE_ROOT = xspace/          (two up — where xspace.conf lives)
 
 _REAL_BIN="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 SPACE_DIR="$(cd "$_REAL_BIN/.." && pwd)"
@@ -35,15 +37,16 @@ XSPACE_ROOT="$(cd "$SPACE_DIR/.." && pwd)"
 CONF="$XSPACE_ROOT/xspace.conf"
 if [[ ! -f "$CONF" ]]; then
     echo "animatex: xspace.conf not found at $CONF"
-    echo "          Re-run x-space/install.sh"
+    echo "          Re-run _configure/install.sh"
     exit 1
 fi
 source "$CONF"
 
 LIB="$SPACE_DIR/lib/animatex.sh"
 if [[ ! -f "$LIB" ]]; then
-    echo "animatex: lib/animatex.sh not found at $LIB"
-    echo "          Expected: animate-space/lib/animatex.sh"
+    echo "animatex: animate-space/lib/animatex.sh not found"
+    echo "          Expected at: $LIB"
+    echo "          Re-run _configure/install.sh"
     exit 1
 fi
 source "$LIB"
@@ -54,6 +57,6 @@ source "$LIB"
 
 case "${1:-run}" in
     --help|-h|help)       animatex_help ;;
-    --version|-v|version) echo "animatex v0.4.0" ;;
+    --version|-v|version) echo "animatex v0.5.0" ;;
     *)                    animatex_run "$@" ;;
 esac
