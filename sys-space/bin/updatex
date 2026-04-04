@@ -5,35 +5,50 @@
 # Runs dnf upgrade, flatpak update, dnf autoremove, then optionally
 # pulls the latest xspace repo and re-runs install.sh.
 #
-# Workstation-specific — uses dnf (Fedora). Adapt for other distros.
+# Workstation-specific — uses dnf (Fedora). Adapt lib/sysupdate.sh for
+# other distros when that abstraction is needed.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v0.1.0 — Moved from x-space/bin/ to sys-space/bin/. Split into two
-#             modes: --system (dnf + flatpak) and --xspace (git pull +
-#             install). Default runs both. Added --help flag.
+#   v0.2.0 — Fixed broken path: was hardcoded to x-space/update.sh.
+#             Now reads CONFIGURE_DIR from xspace.conf so any future rename
+#             of the orchestrator folder only needs one conf edit.
+#   v0.1.0 — Initial release in sys-space/bin/.
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BOOTSTRAP — find XSPACE_ROOT to call x-space/update.sh
+# BOOTSTRAP
 # ─────────────────────────────────────────────────────────────────────────────
+# SPACE_DIR  = sys-space/    (one up from bin/)
+# XSPACE_ROOT = xspace/       (one further up — where xspace.conf lives)
 
 _REAL_BIN="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-SPACE_DIR="$(cd "$_REAL_BIN/.." && pwd)"    # sys-space/
-XSPACE_ROOT="$(cd "$SPACE_DIR/.." && pwd)"  # xspace/
+SPACE_DIR="$(cd "$_REAL_BIN/.." && pwd)"
+XSPACE_ROOT="$(cd "$SPACE_DIR/.." && pwd)"
+
+# Source xspace.conf to get CONFIGURE_DIR — never hardcode "_configure"
+CONF="$XSPACE_ROOT/xspace.conf"
+if [[ ! -f "$CONF" ]]; then
+    echo "updatex: xspace.conf not found at $CONF"
+    echo "         Re-run _configure/install.sh"
+    exit 1
+fi
+source "$CONF"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 
-_XSPACE_UPDATE_SCRIPT="$XSPACE_ROOT/x-space/update.sh"
+# CONFIGURE_DIR is set by xspace.conf (currently "_configure")
+_UPDATE_SCRIPT="$XSPACE_ROOT/$CONFIGURE_DIR/update.sh"
 
-ok()  { echo "  ✓ $*"; }
-log() { echo "  → $*"; }
-hr()  { echo ""; echo "  ── $* ──────────────────────────────────────────────────"; }
+ok()   { echo "  ✓ $*"; }
+warn() { echo "  ⚠  $*"; }
+log()  { echo "  → $*"; }
+hr()   { echo ""; echo "  ── $* ──────────────────────────────────────────────────"; }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HELP
@@ -45,7 +60,7 @@ usage() {
   updatex — system + XSpace updater
 
   USAGE
-    updatex                  run system update AND xspace repo update (default)
+    updatex                  system update AND xspace repo update (default)
     updatex --system         system packages only (dnf + flatpak)
     updatex --xspace         xspace repo only (git pull + install.sh)
     updatex --skip-pull      xspace install.sh only, no git pull
@@ -58,7 +73,7 @@ usage() {
 
   XSpace update steps:
     1. git pull --ff-only origin main (from xspace repo root)
-    2. x-space/install.sh (re-wires all symlinks and PATH entries)
+    2. _configure/install.sh (re-wires all symlinks and PATH entries)
 
 HELP
 }
@@ -93,11 +108,11 @@ if [[ "$RUN_SYSTEM" == true ]]; then
     ok "dnf upgrade complete"
 
     log "flatpak update..."
-    flatpak update -y || warn "flatpak update failed (non-fatal)"
-    ok "flatpak update complete"
+    flatpak update -y 2>/dev/null && ok "flatpak update complete" \
+        || warn "flatpak update failed (non-fatal)"
 
     log "dnf autoremove..."
-    sudo dnf autoremove -y || true
+    sudo dnf autoremove -y 2>/dev/null || true
     ok "autoremove complete"
 fi
 
@@ -108,15 +123,18 @@ fi
 if [[ "$RUN_XSPACE" == true ]]; then
     hr "XSpace update"
 
-    if [[ ! -f "$_XSPACE_UPDATE_SCRIPT" ]]; then
-        echo "  ✗ x-space/update.sh not found at $_XSPACE_UPDATE_SCRIPT"
+    if [[ ! -f "$_UPDATE_SCRIPT" ]]; then
+        echo ""
+        echo "  ✗ orchestrator update script not found at $_UPDATE_SCRIPT"
+        echo "  CONFIGURE_DIR in xspace.conf is set to: $CONFIGURE_DIR"
+        echo "  Verify the folder name matches."
         exit 1
     fi
 
     if [[ "$SKIP_PULL" == true ]]; then
-        exec "$_XSPACE_UPDATE_SCRIPT" --skip-pull
+        exec "$_UPDATE_SCRIPT" --skip-pull
     else
-        exec "$_XSPACE_UPDATE_SCRIPT"
+        exec "$_UPDATE_SCRIPT"
     fi
 fi
 

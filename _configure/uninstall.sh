@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# x-space/uninstall.sh
+# _configure/uninstall.sh
 #
-# Removes everything x-space/install.sh put onto the system.
+# Removes everything _configure/install.sh put onto the system.
 # Safe even if install was only partially completed.
 #
 # Removes: ~/bin symlinks for all space scripts, PATH lines for all
@@ -12,15 +12,14 @@
 #                 logs, or backup-space/config/backups.conf.
 #
 # Usage:
-#   cd xspace/x-space && ./uninstall.sh
+#   cd xspace/_configure && ./uninstall.sh
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v0.3.0 — Updated to match install.sh v0.5.0. Now covers all five spaces
-#             in XSPACE_ALL_BIN_DIRS (x-space, animate-space, git-space,
-#             sys-space, backup-space). Uses _X_DIR to avoid conf collision.
-#   v0.2.0 — Looped XSPACE_ALL_BIN_DIRS; _X_DIR fix.
+#   v0.3.0 — Folder renamed x-space/ → _configure/. Path comment and
+#             marker path updated. No other changes.
+#   v0.2.0 — Loops XSPACE_ALL_BIN_DIRS; _X_DIR fix.
 #   v0.1.0 — Initial release.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -99,7 +98,7 @@ else                                    SHELL_RC="$HOME/.profile"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 1 — REMOVE SYMLINKS AND PATH LINES FOR ALL SPACE BINS
+# STEP 1 — REMOVE SYMLINKS AND PATH LINES
 # ─────────────────────────────────────────────────────────────────────────────
 hr "Space bins — symlinks + PATH lines"
 
@@ -137,6 +136,9 @@ remove_line_from_rc "$SHELL_RC" "$COMP_LINE" "gitspace completion"
 
 remove_pattern_from_rc "$SHELL_RC" "gitspace-completion.sh" "stale gitspace-completion lines"
 
+# Also clean up any old PATH entries that still reference x-space/bin
+remove_pattern_from_rc "$SHELL_RC" "x-space/bin" "stale x-space/bin PATH lines"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 3 — MARKER
 # ─────────────────────────────────────────────────────────────────────────────
@@ -153,5 +155,5 @@ echo ""
 echo "  ── Uninstall complete ────────────────────────────────────────"
 echo ""
 echo "  Open a new terminal or: source ~/$( basename "$SHELL_RC" )"
-echo "  Re-install: cd $XSPACE_ROOT/x-space && ./install.sh"
+echo "  Re-install: cd $XSPACE_ROOT/_configure && ./install.sh"
 echo ""
