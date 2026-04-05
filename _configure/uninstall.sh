@@ -5,7 +5,9 @@
 # Safe even if install was only partially completed.
 #
 # Removes: ~/bin symlinks for all space scripts, PATH lines for all
-#          space bin dirs, gitspace completion line, stale RC lines,
+#          space bin dirs, gitspace completion RC line (both v0.5.0
+#          absolute-path style and v0.6.0 symlink style), the stable
+#          symlink at ~/.local/share/xspace/, stale RC lines,
 #          .xspace/installed marker.
 #
 # Does NOT touch: the xspace repo, tool directories, fonts, exports,
@@ -17,6 +19,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
+#   v0.4.0 — Completion removal updated for v0.6.0 symlink pattern.
+#             Removes the new _xsp=... RC line, the ~/.local/share/xspace/
+#             symlink, and any old absolute-path lines from v0.5.0 (backward
+#             compat). All three patterns cleaned in one pass.
 #   v0.3.0 — Folder renamed x-space/ → _configure/. Path comment and
 #             marker path updated. No other changes.
 #   v0.2.0 — Loops XSPACE_ALL_BIN_DIRS; _X_DIR fix.
@@ -44,6 +50,10 @@ USER_BIN="${USER_BIN:-${USER_BIN_DEFAULT}}"
 _X_MARKER="$_X_DIR/.xspace"
 ABS_GITSPACE_COMPLETION="$XSPACE_ROOT/$GITSPACE_COMPLETION"
 
+# Stable share directory used by v0.6.0 symlink pattern
+XSPACE_SHARE="$HOME/.local/share/xspace"
+COMP_SYMLINK="$XSPACE_SHARE/gitspace-completion.sh"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -61,7 +71,7 @@ remove_line_from_rc() {
         mv "$tmp" "$rc"
         ok "Removed from RC: $label"
     else
-        ok "Not in RC: $label"
+        ok "Not in RC (already clean): $label"
     fi
 }
 
@@ -73,6 +83,8 @@ remove_pattern_from_rc() {
         grep -v "$pattern" "$rc" > "$tmp"
         mv "$tmp" "$rc"
         ok "Removed stale lines: $label"
+    else
+        ok "Not found (already clean): $label"
     fi
 }
 
@@ -81,9 +93,10 @@ remove_pattern_from_rc() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 echo ""
-echo "  XSpace uninstaller v0.3.0"
+echo "  XSpace uninstaller v0.4.0"
 echo "  root    : $XSPACE_ROOT"
-echo "  removes : ~/bin symlinks, PATH lines, RC entries, installed marker"
+echo "  removes : ~/bin symlinks, PATH lines, RC entries, completion"
+echo "            symlink (~/.local/share/xspace/), installed marker"
 echo "  keeps   : repo, tool dirs, fonts, exports, logs, backups.conf"
 echo ""
 read -rp "  Proceed? (y/N): " _confirm
@@ -131,16 +144,36 @@ hr "Shell RC cleanup"
 SAFE_ADD='[[ ":$PATH:" != *":$HOME/bin:"* ]] && PATH="$HOME/bin:$PATH"'
 remove_line_from_rc "$SHELL_RC" "$SAFE_ADD" "~/bin on PATH"
 
-COMP_LINE="[[ -f \"$ABS_GITSPACE_COMPLETION\" ]] && source \"$ABS_GITSPACE_COMPLETION\""
-remove_line_from_rc "$SHELL_RC" "$COMP_LINE" "gitspace completion"
+# v0.6.0 completion line — the stable $HOME-relative pattern
+COMP_LINE_V6='_xsp="$HOME/.local/share/xspace/gitspace-completion.sh"; [[ -f "$_xsp" ]] && source "$_xsp"; unset _xsp'
+remove_line_from_rc "$SHELL_RC" "$COMP_LINE_V6" "gitspace completion (v0.6.0 symlink line)"
 
-remove_pattern_from_rc "$SHELL_RC" "gitspace-completion.sh" "stale gitspace-completion lines"
+# v0.5.0 and earlier — absolute path style. Use pattern match (path varies by machine).
+remove_pattern_from_rc "$SHELL_RC" "gitspace-completion.sh" "gitspace completion (old absolute-path style)"
 
-# Also clean up any old PATH entries that still reference x-space/bin
+# Pre-rename cleanup — stale x-space/bin PATH lines
 remove_pattern_from_rc "$SHELL_RC" "x-space/bin" "stale x-space/bin PATH lines"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 3 — MARKER
+# STEP 3 — COMPLETION SYMLINK
+# ─────────────────────────────────────────────────────────────────────────────
+hr "Completion symlink (~/.local/share/xspace/)"
+
+if [[ -L "$COMP_SYMLINK" ]]; then
+    rm "$COMP_SYMLINK"
+    ok "Removed: $COMP_SYMLINK"
+else
+    ok "No symlink found at $COMP_SYMLINK (already clean)"
+fi
+
+# Remove the share dir only if it's now empty
+if [[ -d "$XSPACE_SHARE" ]] && [[ -z "$(ls -A "$XSPACE_SHARE" 2>/dev/null)" ]]; then
+    rmdir "$XSPACE_SHARE"
+    ok "Removed empty: $XSPACE_SHARE"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 4 — MARKER
 # ─────────────────────────────────────────────────────────────────────────────
 hr "Marker"
 

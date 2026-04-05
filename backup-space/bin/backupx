@@ -69,7 +69,7 @@ LOG_DIR="$SPACE_DIR/logs"
 DATE_PREFIX="$(date +'%Y%m%d')"
 
 # rclone remote name as configured via `rclone config`
-RCLONE_REMOTE="onedrive"
+RCLONE_REMOTE="onedrive-sconl"
 
 # Archive folder name — lives only at the destination, never locally
 ARCHIVEX_DIR="_archivex"
@@ -348,25 +348,54 @@ _check_rclone_auth() {
     _err "rclone is not installed."
     echo ""
     echo -e "  ${GRY}Install from: ${CYN}https://rclone.org/install/${R}"
+    echo -e "  ${GRY}Fedora:   ${CYN}sudo dnf install rclone${R}"
+    echo -e "  ${GRY}Windows:  ${CYN}winget install Rclone.Rclone${R}"
     return 1
   fi
 
-  # Check if the named remote is configured
+  # ── Remote not configured → offer to run rclone config now ───────────────
   if ! rclone listremotes 2>/dev/null | grep -qF "${RCLONE_REMOTE}:"; then
     _err "rclone remote '${RCLONE_REMOTE}' is not configured."
     echo ""
-    echo -e "  ${GRY}Run ${CYN}rclone config${R}${GRY} and create a remote named '${RCLONE_REMOTE}'.${R}"
-    echo -e "  ${GRY}Choose type: Microsoft OneDrive (or SharePoint).${R}"
-    return 1
+    echo -e "  ${GRY}This remote needs to be created once via ${CYN}rclone config${R}${GRY}.${R}"
+    echo -e "  ${GRY}When prompted, choose: ${WHT}Microsoft OneDrive${R}${GRY}, name it ${WHT}${RCLONE_REMOTE}${R}${GRY}.${R}"
+    echo ""
+    printf "  ${CYN}Run rclone config now?${R} ${GRY}[Y/n]${R} "
+    local yn; read -r yn
+    if [[ "${yn:-y}" =~ ^[Yy]$ || -z "$yn" ]]; then
+      echo ""
+      rclone config
+      echo ""
+      # Re-check after config completes
+      if rclone listremotes 2>/dev/null | grep -qF "${RCLONE_REMOTE}:"; then
+        _ok "Remote '${RCLONE_REMOTE}' configured."
+      else
+        _err "Remote '${RCLONE_REMOTE}' still not found after config — exiting."
+        return 1
+      fi
+    else
+      return 1
+    fi
   fi
 
-  # Quick connectivity test
+  # ── Token expired → offer to reconnect ───────────────────────────────────
   _info "Verifying OneDrive connection..."
   if ! rclone lsd "${RCLONE_REMOTE}:" --max-depth=1 &>/dev/null; then
     _err "Cannot reach '${RCLONE_REMOTE}:' — token may have expired."
     echo ""
-    echo -e "  ${GRY}Run ${CYN}rclone config reconnect ${RCLONE_REMOTE}:${R}${GRY} to refresh.${R}"
-    return 1
+    printf "  ${CYN}Reconnect now? (rclone config reconnect)${R} ${GRY}[Y/n]${R} "
+    local yn; read -r yn
+    if [[ "${yn:-y}" =~ ^[Yy]$ || -z "$yn" ]]; then
+      echo ""
+      rclone config reconnect "${RCLONE_REMOTE}:"
+      echo ""
+      if ! rclone lsd "${RCLONE_REMOTE}:" --max-depth=1 &>/dev/null; then
+        _err "Still cannot connect — check your network and try again."
+        return 1
+      fi
+    else
+      return 1
+    fi
   fi
 
   _ok "OneDrive connected  ${GRY}(${RCLONE_REMOTE}:)${R}"
@@ -641,6 +670,53 @@ _run_job() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# INIT GATE — detect uninitialized local folders and prompt
+# ─────────────────────────────────────────────────────────────────────────────
+# Called after job selection. Checks whether any selected rclone job's local
+# source directory is missing. If so, offers to run --init right now.
+
+_check_needs_init() {
+  local indices=("$@")
+  local missing_names=() missing_paths=()
+
+  for idx in "${indices[@]}"; do
+    [[ "${JOB_METHODS[$idx]}" != "rclone" ]] && continue
+    local src="${JOB_SOURCES[$idx]}"
+    if [[ ! -d "$src" ]]; then
+      missing_names+=("${JOB_NAMES[$idx]}")
+      missing_paths+=("$src")
+    fi
+  done
+
+  [[ ${#missing_names[@]} -eq 0 ]] && return 0  # all good
+
+  echo ""
+  _warn "${#missing_names[@]} local folder(s) have not been pulled yet:"
+  local i
+  for (( i=0; i<${#missing_names[@]}; i++ )); do
+    echo -e "     ${GRY}· ${WHT}${missing_names[$i]}${R}  ${GRY}→ ${missing_paths[$i]}${R}"
+  done
+  echo ""
+  echo -e "  ${GRY}Run ${CYN}backupx --init${R}${GRY} to pull them from OneDrive first,${R}"
+  echo -e "  ${GRY}then run ${CYN}backupx${R}${GRY} for ongoing backups.${R}"
+  echo ""
+  printf "  ${CYN}Run --init now?${R} ${GRY}[Y/n]${R} "
+  local yn; read -r yn
+
+  if [[ "${yn:-y}" =~ ^[Yy]$ || -z "$yn" ]]; then
+    echo ""
+    _init_setup
+    echo ""
+    echo -e "  ${GRY}Resuming backup run...${R}"
+    echo ""
+  else
+    echo ""
+    echo -e "  ${GRY}Skipping missing folders. Jobs without a local source will fail.${R}"
+    echo ""
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -692,6 +768,10 @@ if (( ${#run_indices[@]} == 0 )); then
   exit 0
 fi
 
+# ── Init gate — prompt if any local source dirs are missing ──────────────────
+
+_check_needs_init "${run_indices[@]}"
+
 # ── Auth check for any rclone jobs ────────────────────────────────────────────
 
 needs_rclone=false
@@ -700,13 +780,7 @@ for idx in "${run_indices[@]}"; do
 done
 
 if [[ "$needs_rclone" == true ]]; then
-  _check_rclone_auth || {
-    echo ""
-    echo -e "  ${GRY}Tip: run ${CYN}rclone config${R}${GRY} to authenticate,${R}"
-    echo -e "  ${GRY}or ${CYN}rclone config reconnect ${RCLONE_REMOTE}:${R}${GRY} to refresh a token.${R}"
-    echo ""
-    exit 1
-  }
+  _check_rclone_auth || exit 1
 fi
 
 # ── Dry-run notice ────────────────────────────────────────────────────────────

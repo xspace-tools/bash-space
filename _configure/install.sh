@@ -10,9 +10,17 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
+#   v0.6.0 — Step 4 rewritten: gitspace completion now registered via a stable
+#             symlink at ~/.local/share/xspace/gitspace-completion.sh. The RC
+#             line references $HOME (not an absolute path), so moving the repo
+#             never breaks the shell. Re-running install.sh after a move updates
+#             the symlink in one step — no manual .bashrc editing needed. Old
+#             absolute-path RC lines from v0.5.0 are cleaned up automatically.
+#             Step 2 skips conf rewrite when backups.conf already exists (was
+#             already idempotent, now also avoids touching a customised conf).
 #   v0.5.0 — Folder renamed x-space/ → _configure/. Path comments updated.
 #             All tool code has moved to their respective spaces — this script
-#             is now a pure orchestrator. No functional logic changes.
+#             is now a pure orchestrator.
 #   v0.4.0 — (_configure was x-space) All tool code removed from _configure/bin.
 #             animate-space/bin and lib created. sys-space and backup-space
 #             scaffolded. backup-space/config/backups.conf.example written.
@@ -27,8 +35,8 @@ IFS=$'\n\t'
 # ─────────────────────────────────────────────────────────────────────────────
 # BOOTSTRAP
 # ─────────────────────────────────────────────────────────────────────────────
-# _X_DIR = xspace/_configure/   (NEVER named XSPACE_DIR — see xspace.conf warning)
-# XSPACE_ROOT = xspace/          (where xspace.conf lives)
+# _X_DIR    = xspace/_configure/   (NEVER named XSPACE_DIR — see xspace.conf warning)
+# XSPACE_ROOT = xspace/            (where xspace.conf lives)
 
 _X_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 XSPACE_ROOT="$(cd "$_X_DIR/.." && pwd)"
@@ -80,7 +88,24 @@ ABS_BK_CONFIG="$XSPACE_ROOT/$BACKUPSPACE_CONFIG_DIR"
 ABS_BK_LOGS="$XSPACE_ROOT/$BACKUPSPACE_LOG_DIR"
 ABS_BK_CONF="$XSPACE_ROOT/$BACKUPSPACE_CONF"
 
+# gitspace completion — stable share location (move-safe)
+# The RC line always reads: $HOME/.local/share/xspace/gitspace-completion.sh
+# This symlink is updated by every install run, so moving the repo = re-run install.
+XSPACE_SHARE="$HOME/.local/share/xspace"
+COMP_SYMLINK="$XSPACE_SHARE/gitspace-completion.sh"
+# The RC line — uses $HOME variable, never a hardcoded path
+COMP_LINE='_xsp="$HOME/.local/share/xspace/gitspace-completion.sh"; [[ -f "$_xsp" ]] && source "$_xsp"; unset _xsp'
+
 PILLOW_PKG="Pillow"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SHELL RC DETECTION
+# ─────────────────────────────────────────────────────────────────────────────
+
+if   [[ -n "${ZSH_VERSION-}"  ]]; then SHELL_RC="$HOME/.zshrc"
+elif [[ -n "${BASH_VERSION-}" ]]; then SHELL_RC="$HOME/.bashrc"
+else                                    SHELL_RC="$HOME/.profile"
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
@@ -102,14 +127,26 @@ add_line_to_rc() {
     fi
 }
 
+remove_pattern_from_rc() {
+    local rc="$1" pattern="$2" label="$3"
+    [[ ! -f "$rc" ]] && return 0
+    if grep -q "$pattern" "$rc" 2>/dev/null; then
+        local tmp; tmp="$(mktemp)"
+        grep -v "$pattern" "$rc" > "$tmp"
+        mv "$tmp" "$rc"
+        ok "RC: cleaned stale — $label"
+    fi
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # HEADER
 # ─────────────────────────────────────────────────────────────────────────────
 
 echo ""
-echo "  XSpace installer v0.5.0"
+echo "  XSpace installer v0.6.0"
 echo "  root : $XSPACE_ROOT"
 echo "  bin  : $USER_BIN"
+echo "  rc   : $SHELL_RC"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 1 — DIRECTORIES
@@ -124,41 +161,34 @@ mkdir -p "$XSPACE_ROOT/$ANIMATEX_SVG_FONTS_DIR"
 mkdir -p "$GITSPACE_LOG_DIR"
 mkdir -p "$ABS_SYS_BIN" "$ABS_SYS_LIB"
 mkdir -p "$ABS_BK_BIN" "$ABS_BK_LIB" "$ABS_BK_CONFIG" "$ABS_BK_LOGS"
+mkdir -p "$XSPACE_SHARE"
 
 ok "All directories ready"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 2 — BACKUPS.CONF (first install only)
+# STEP 2 — BACKUPS.CONF (first install only — never overwrite a customised conf)
 # ─────────────────────────────────────────────────────────────────────────────
 hr "backup-space config"
 
 if [[ ! -f "$ABS_BK_CONF" ]]; then
     cat > "$ABS_BK_CONF" <<'EOF'
 # backup-space/config/backups.conf
-# Format: method|source|dest|options|mode
-# method: rclone | rsync | tar
-# mode:   copy (additive) | sync (mirror)
-# Lines starting with # are ignored.
+# Format: name|method|source|dest|options
+# {LOCAL_BASE}    → ~/_ (Linux/macOS) or ~/Desktop/_ (Windows)
+# {RCLONE_REMOTE} → the RCLONE_REMOTE value set in backupx
 #
-# Examples:
-# rclone|/home/user/Documents|gdrive:Backups/Documents|--progress|sync
-# rsync|/home/user/Projects|server:/backups/projects|-avz --delete|sync
-# tar|/home/user/important|/mnt/usb/important.tar.gz|--exclude='.git'|copy
+# Run: backupx --help   for full documentation.
+# Run: backupx --init   to pull remote folders to local (first time).
 EOF
-    ok "Created backup-space/config/backups.conf"
+    ok "Created backup-space/config/backups.conf (starter)"
 else
-    ok "backups.conf already exists"
+    ok "backups.conf exists — not overwritten"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 3 — ALL SPACE BINS: PATH ENTRIES + SYMLINKS
 # ─────────────────────────────────────────────────────────────────────────────
 hr "Space bins → PATH + ~/bin"
-
-if   [[ -n "${ZSH_VERSION-}"  ]]; then SHELL_RC="$HOME/.zshrc"
-elif [[ -n "${BASH_VERSION-}" ]]; then SHELL_RC="$HOME/.bashrc"
-else                                    SHELL_RC="$HOME/.profile"
-fi
 
 for rel_bin in "${XSPACE_ALL_BIN_DIRS[@]}"; do
     abs_bin="$XSPACE_ROOT/$rel_bin"
@@ -186,16 +216,33 @@ SAFE_ADD='[[ ":$PATH:" != *":$HOME/bin:"* ]] && PATH="$HOME/bin:$PATH"'
 add_line_to_rc "$SHELL_RC" "$SAFE_ADD" "xspace: ~/bin on PATH"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 4 — GITSPACE COMPLETION
+# STEP 4 — GITSPACE COMPLETION (move-safe via stable symlink)
 # ─────────────────────────────────────────────────────────────────────────────
-hr "gitspace completion"
+# Design rationale:
+#   Old approach: wrote the absolute repo path into .bashrc directly.
+#   Problem:      moving the repo = stale path = error on every terminal open.
+#   New approach: symlink  actual_path → ~/.local/share/xspace/completion.sh
+#                 RC line: sources $HOME/.local/share/xspace/completion.sh
+#   Benefit:      RC line uses $HOME (stable). After any move, re-run install.sh
+#                 and the symlink is updated — no .bashrc editing ever needed.
+# ─────────────────────────────────────────────────────────────────────────────
+hr "gitspace completion (move-safe symlink)"
+
+# Clean up any old absolute-path style RC entries from v0.5.0 and earlier.
+# Safe to run every time — grep returns non-zero if nothing found.
+remove_pattern_from_rc "$SHELL_RC" \
+    "gitspace-completion.sh" \
+    "old absolute-path completion line"
 
 if [[ -f "$ABS_GITSPACE_COMPLETION" ]]; then
-    COMP_LINE="[[ -f \"$ABS_GITSPACE_COMPLETION\" ]] && source \"$ABS_GITSPACE_COMPLETION\""
+    ln -sf "$ABS_GITSPACE_COMPLETION" "$COMP_SYMLINK"
+    ok "Symlink: $COMP_SYMLINK → $ABS_GITSPACE_COMPLETION"
+
     add_line_to_rc "$SHELL_RC" "$COMP_LINE" "xspace: gitspace tab completion"
-    ok "gitspace completion registered"
+    ok "gitspace completion registered (move-safe)"
 else
-    warn "gitspace completion not found — re-run install after git-space is set up"
+    warn "gitspace-completion.sh not found at $ABS_GITSPACE_COMPLETION"
+    warn "Re-run install.sh after git-space is set up"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -285,10 +332,14 @@ echo "  Commands available:"
 echo "    animatex --help      animated text assets"
 echo "    commitx --help       git commit helper"
 echo "    backupx --help       backup orchestrator"
+echo "    backupx --init       first-time: pull OneDrive folders to local"
 echo "    updatex --help       system + repo updater"
 echo "    refreshx             reload shell"
 echo ""
 echo "  Adding commands: drop a script into any space's bin/ dir."
 echo "  Scripts in git-space/bin, sys-space/bin, animate-space/bin,"
 echo "  backup-space/bin are available on next terminal open."
+echo ""
+echo "  Moved the repo? Just re-run this script — the completion symlink"
+echo "  is updated automatically. No .bashrc editing needed."
 echo ""
