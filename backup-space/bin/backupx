@@ -13,6 +13,12 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
+#   v0.3.1 — Fixed IFS word-splitting bug: global IFS=$'\n\t' prevented $options
+#             from splitting on spaces, causing rclone to receive multi-flag
+#             strings like "--transfers=8 --drive-chunk-size=64M" as a single
+#             token. All three method functions now use `IFS=' ' read -ra _opts`
+#             to split into a proper array before passing to the tool.
+#             RCLONE_REMOTE updated to 'onedrive-sconl'.
 #   v0.3.0 — Full rewrite. Interactive guided job-selection menu. Archive-sync
 #             replaces copy/sync: deletions in dest moved to _archivex/ (not
 #             deleted). Cross-platform: Linux/macOS/Windows Git Bash. LOCAL_BASE
@@ -465,6 +471,11 @@ _init_setup() {
 _archive_sync_rclone() {
   local name="$1" source="$2" dest="$3" options="$4" log_file="$5"
 
+  # Split options string into array using space as IFS (the global IFS is \n\t,
+  # so $options unquoted would NOT word-split on spaces — must use read -ra).
+  local -a _opts=()
+  [[ -n "$options" ]] && IFS=' ' read -ra _opts <<< "$options"
+
   # ── Step 1: detect deletions ─────────────────────────────────────────────
   _dim "Scanning for remote-only files..."
 
@@ -512,13 +523,12 @@ _archive_sync_rclone() {
   _info "Syncing → ${dest}"
 
   if [[ "$DRY_RUN" == true ]]; then
-    _dim "[dry-run] rclone sync $source $dest"
+    _dim "[dry-run] rclone sync $source $dest ${_opts[*]:-}"
     return 0
   fi
 
-  # shellcheck disable=SC2086
   rclone sync "$source" "$dest" \
-    $options \
+    "${_opts[@]+"${_opts[@]}"}" \
     --exclude "${ARCHIVEX_DIR}/**" \
     >>"$log_file" 2>&1
 }
@@ -533,16 +543,19 @@ _archive_sync_rsync() {
   local name="$1" source="$2" dest="$3" options="$4" log_file="$5"
   local archive_dir="${dest}/${ARCHIVEX_DIR}"
 
+  # Split options string into array (global IFS is \n\t — not space)
+  local -a _opts=()
+  [[ -n "$options" ]] && IFS=' ' read -ra _opts <<< "$options"
+
   mkdir -p "$dest" "$archive_dir"
 
   # ── Step 1: detect deletions ─────────────────────────────────────────────
   _dim "Scanning for destination-only items..."
 
   local to_archive
-  # shellcheck disable=SC2086
   to_archive="$(rsync -a --delete --dry-run \
     --exclude="${ARCHIVEX_DIR}/" \
-    $options \
+    "${_opts[@]+"${_opts[@]}"}" \
     "${source}/" "${dest}/" 2>>"$log_file" \
     | awk '/^deleting / { sub(/^deleting /, ""); print }' || true)"
 
@@ -574,8 +587,7 @@ _archive_sync_rsync() {
     return 0
   fi
 
-  # shellcheck disable=SC2086
-  rsync -a $options \
+  rsync -a "${_opts[@]+"${_opts[@]}"}" \
     --exclude="${ARCHIVEX_DIR}/" \
     "${source}/" "${dest}/" \
     >>"$log_file" 2>&1
@@ -589,6 +601,10 @@ _archive_sync_rsync() {
 _run_tar() {
   local name="$1" source="$2" dest="$3" options="$4" log_file="$5"
   local dest_dir dest_base archive_dir
+
+  # Split options string into array (global IFS is \n\t — not space)
+  local -a _opts=()
+  [[ -n "$options" ]] && IFS=' ' read -ra _opts <<< "$options"
 
   dest_dir="$(dirname "$dest")"
   dest_base="$(basename "$dest")"
@@ -612,8 +628,7 @@ _run_tar() {
     return 0
   fi
 
-  # shellcheck disable=SC2086
-  tar czf "$dest" $options "$source" >>"$log_file" 2>&1
+  tar czf "$dest" "${_opts[@]+"${_opts[@]}"}" "$source" >>"$log_file" 2>&1
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
