@@ -1,0 +1,232 @@
+#!/usr/bin/env bash
+# sys-space/bin/unbindx
+#
+# Unbind the ACPI battery driver on a Lenovo X260.
+# Always shows battery status first regardless of mode called.
+#
+# Usage:
+#   unbindx              status → choose battery → unbind
+#   unbindx --rebind     status → choose battery → rebind
+#   unbindx --status     show status only
+#   unbindx --help
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────────────────────────────────────────
+#   v1.1.0 — Status always shown first. Multi-battery selection: lists all
+#             PNP0C0A devices with bound state and BAT name, user picks which
+#             one to act on. --rebind flag for bindx companion. Quit option
+#             in interactive selection. Auto-detects all present devices.
+#   v1.0.0 — Initial terminal-native rewrite.
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+IFS=$'\n\t'
+
+ACPI_DRIVER_DIR="/sys/bus/acpi/drivers/battery"
+POWER_SUPPLY_DIR="/sys/class/power_supply"
+
+if [[ -t 1 && "${NO_COLOR:-}" != "1" ]]; then
+  R=$'\033[0m' BOLD=$'\033[1m' DIM=$'\033[2m'
+  GRN=$'\033[0;32m' YLW=$'\033[0;33m' BLU=$'\033[0;34m'
+  CYN=$'\033[0;36m' RED=$'\033[0;31m' WHT=$'\033[1;37m' GRY=$'\033[0;90m'
+else
+  R='' BOLD='' DIM='' GRN='' YLW='' BLU='' CYN='' RED='' WHT='' GRY=''
+fi
+
+_ok()     { echo -e "  ${GRN}✓${R}  $*"; }
+_info()   { echo -e "  ${BLU}›${R}  $*"; }
+_warn()   { echo -e "  ${YLW}⚠${R}   $*"; }
+_err()    { echo -e "  ${RED}✗${R}  $*" >&2; }
+_dim()    { echo -e "     ${GRY}$*${R}"; }
+_hr()     { echo -e "\n  ${DIM}────────────────────────────────────────────────────────${R}"; }
+
+_list_devices() { ls "$ACPI_DRIVER_DIR" 2>/dev/null | grep "^PNP0C0A" | sort || true; }
+_is_bound()     { [[ -L "${ACPI_DRIVER_DIR}/$1" ]] || [[ -e "${ACPI_DRIVER_DIR}/$1" ]]; }
+_bat_name()     { local idx="${1##*:}"; printf "BAT%d" "$(( 16#$idx ))" 2>/dev/null || echo "BAT?"; }
+_bat_val()      { [[ -r "$1" ]] && tr -d '\n' < "$1" 2>/dev/null || echo ""; }
+
+_show_status() {
+  echo ""
+  echo -e "  ${BOLD}${WHT}Battery Status${R}"
+  _hr
+  echo ""
+
+  if [[ ! -d "$ACPI_DRIVER_DIR" ]]; then
+    _err "ACPI driver directory not found: ${ACPI_DRIVER_DIR}"; return 1
+  fi
+
+  echo -e "  ${GRY}Hardware${R}"
+  local found=false
+  for bat_path in "$POWER_SUPPLY_DIR"/BAT*; do
+    [[ -d "$bat_path" ]] || continue; found=true
+    local bn; bn="$(basename "$bat_path")"
+    local cap status mfr model
+    cap="$(_bat_val "${bat_path}/capacity")"
+    status="$(_bat_val "${bat_path}/status")"
+    mfr="$(_bat_val "${bat_path}/manufacturer")"
+    model="$(_bat_val "${bat_path}/model_name")"
+    local cc="$GRN"
+    [[ -n "$cap" ]] && (( cap <= 20 )) && cc="$RED"
+    [[ -n "$cap" ]] && (( cap > 20 && cap <= 40 )) && cc="$YLW"
+    printf "  ${CYN}%-5s${R}  ${cc}%3s%%${R}  ${GRY}%-12s${R}  ${DIM}%s %s${R}\n" \
+      "$bn" "${cap:--}" "${status:--}" "$mfr" "$model"
+  done
+  [[ "$found" == false ]] && _dim "No BAT* entries found"
+
+  echo ""
+  echo -e "  ${GRY}Driver binding${R}"
+  local devices=()
+  while IFS= read -r d; do [[ -n "$d" ]] && devices+=("$d"); done < <(_list_devices)
+  if [[ ${#devices[@]} -eq 0 ]]; then
+    _dim "No PNP0C0A devices found in ${ACPI_DRIVER_DIR}"
+  else
+    for dev in "${devices[@]}"; do
+      local bat; bat="$(_bat_name "$dev")"
+      if _is_bound "$dev"; then
+        echo -e "  ${GRN}●${R}  ${CYN}${bat}${R}  ${GRY}${dev}${R}  ${GRN}bound${R}   ${GRY}— kernel managing${R}"
+      else
+        echo -e "  ${YLW}○${R}  ${CYN}${bat}${R}  ${GRY}${dev}${R}  ${YLW}unbound${R} ${GRY}— driver detached${R}"
+      fi
+    done
+  fi
+  echo ""
+}
+
+_select_device() {
+  local action="$1"; local devices=()
+  while IFS= read -r d; do [[ -n "$d" ]] && devices+=("$d"); done < <(_list_devices)
+  [[ ${#devices[@]} -eq 0 ]] && { _err "No devices found."; return 1; }
+  if [[ ${#devices[@]} -eq 1 ]]; then SELECTED_DEVICE="${devices[0]}"; return 0; fi
+  echo -e "  ${BOLD}Choose battery to ${action}:${R}"
+  echo ""
+  local i=0
+  for dev in "${devices[@]}"; do
+    local bat; bat="$(_bat_name "$dev")"
+    local st; _is_bound "$dev" && st="${GRN}bound${R}" || st="${YLW}unbound${R}"
+    printf "  ${CYN}[%d]${R}  ${BOLD}%s${R}  ${GRY}%s${R}  %b\n" "$(( ++i ))" "$bat" "$dev" "$st"
+  done
+  echo -e "  ${GRY}[q]${R}  Quit / cancel"
+  echo ""
+  printf "  ${CYN}Select:${R} "
+  IFS= read -r _c; _c="${_c//[[:space:]]/}"
+  if [[ "${_c,,}" == "q" || -z "$_c" ]]; then
+    _info "Cancelled."; return 1
+  fi
+  if [[ "$_c" =~ ^[0-9]+$ ]] && (( _c >= 1 && _c <= ${#devices[@]} )); then
+    SELECTED_DEVICE="${devices[$(( _c - 1 ))]}"; return 0
+  fi
+  _warn "Invalid selection."; return 1
+}
+
+_ensure_sudo() {
+  sudo -n true 2>/dev/null && return 0
+  _info "Requires sudo access for ${ACPI_DRIVER_DIR}."
+  sudo true || { _err "sudo authentication failed."; exit 1; }
+}
+
+_do_unbind() {
+  local dev="$1"; local bat; bat="$(_bat_name "$dev")"
+  if ! _is_bound "$dev"; then _warn "${bat} already unbound."; echo ""; return 0; fi
+  _info "Unbinding ${bat} (${dev})..."
+  echo "$dev" | sudo tee "${ACPI_DRIVER_DIR}/unbind" > /dev/null
+  echo ""; _ok "${bat} unbound — safe to hot-swap."
+  echo -e "  ${GRY}Run ${CYN}bindx${R}${GRY} when swap is complete.${R}"; echo ""
+}
+
+_do_rebind() {
+  local dev="$1"; local bat; bat="$(_bat_name "$dev")"
+  if _is_bound "$dev"; then _warn "${bat} already bound."; echo ""; return 0; fi
+  _info "Rebinding ${bat} (${dev})..."
+  echo "$dev" | sudo tee "${ACPI_DRIVER_DIR}/bind" > /dev/null
+  echo ""; _ok "${bat} rebound — kernel managing battery again."; echo ""
+}
+
+# ── FLAGS ──────────────────────────────────────────────────────────────────────
+
+MODE="interactive"; SELECTED_DEVICE=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --rebind|-r)  MODE="rebind"; shift ;;
+    --status|-s)  MODE="status"; shift ;;
+    --help|-h)
+      cat <<EOF
+
+  ${BOLD}unbindx${R} — Lenovo X260 battery driver manager
+
+  ${BOLD}USAGE${R}
+    unbindx              status → choose battery → unbind (interactive)
+    unbindx --rebind     status → choose battery → rebind
+    unbindx --status     show battery status only, no changes
+    unbindx --help
+
+  ${BOLD}HOT-SWAP WORKFLOW${R}
+    1.  unbindx           detach kernel driver for the battery to swap
+    2.  swap the battery
+    3.  bindx             reattach the driver
+
+  ${BOLD}COMPANION${R}
+    bindx  →  shortcut for unbindx --rebind
+
+EOF
+      exit 0 ;;
+    *) _err "Unknown flag: $1 (try --help)"; exit 1 ;;
+  esac
+done
+
+echo ""
+echo -e "  ${BOLD}${WHT}unbindx${R}${GRY} — battery driver manager (Lenovo X260)${R}"
+
+# Status is ALWAYS shown first
+_show_status || exit 1
+[[ "$MODE" == "status" ]] && exit 0
+
+_ensure_sudo
+
+case "$MODE" in
+  rebind)
+    _select_device "rebind" || exit 0
+    _do_rebind "$SELECTED_DEVICE"
+    ;;
+
+  interactive)
+    # Check overall state
+    local_all_unbound=true
+    while IFS= read -r d; do
+      [[ -z "$d" ]] && continue
+      _is_bound "$d" && local_all_unbound=false
+    done < <(_list_devices)
+
+    if [[ "$local_all_unbound" == true ]]; then
+      echo -e "  ${GRY}All batteries are unbound. Use ${CYN}bindx${R}${GRY} to restore.${R}"
+      echo ""
+      printf "  ${CYN}Rebind a battery? [y/N]:${R} "
+      IFS= read -r _yn
+      if [[ "${_yn,,}" =~ ^y ]]; then
+        _select_device "rebind" || exit 0
+        _do_rebind "$SELECTED_DEVICE"
+      else
+        echo ""; _info "No changes made."; echo ""
+      fi
+    else
+      echo -e "  ${GRY}Unbinding stops kernel monitoring for safe hot-swap.${R}"
+      echo ""
+      printf "  ${CYN}Unbind a battery? [Y/n]:${R} "
+      IFS= read -r _yn
+      if [[ -z "${_yn:-}" || "${_yn,,}" =~ ^y ]]; then
+        _select_device "unbind" || exit 0
+        _do_unbind "$SELECTED_DEVICE"
+        printf "  ${CYN}Swap done — rebind now? [Y/n]:${R} "
+        IFS= read -r _rb
+        if [[ -z "${_rb:-}" || "${_rb,,}" =~ ^y ]]; then
+          echo ""; _do_rebind "$SELECTED_DEVICE"
+        else
+          echo ""; _info "Driver unbound. Run ${CYN}bindx${R} when ready."; echo ""
+        fi
+      else
+        echo ""; _info "No changes made."; echo ""
+      fi
+    fi
+    ;;
+esac

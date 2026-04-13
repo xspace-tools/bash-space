@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+# creator-space/bin/creatorx
+#
+# Launch and manage the creator-space Windows VM.
+# Always shows `virsh list --all` at the top of every run.
+# Starts VM then opens virt-viewer for GUI access.
+#
+# Usage:
+#   creatorx           start VM → open virt-viewer
+#   creatorx --stop    gracefully shut down the VM
+#   creatorx --status  show VM status only
+#   creatorx --help
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────────────────────────────────────────
+#   v1.0.0 — Initial release. Start/stop/status flow. Always shows virsh list
+#             at top. Starts VM with sudo virsh start, then launches virt-viewer
+#             connected to qemu:///system. Waits for VM to reach running state
+#             before opening viewer.
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────────────────────────────────────────
+
+VM_NAME="creator-space"
+VIRSH_URI="qemu:///system"
+
+# Seconds to wait for VM to reach running state before opening viewer
+VM_START_WAIT=5
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COLORS
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ -t 1 && "${NO_COLOR:-}" != "1" ]]; then
+  R=$'\033[0m'      BOLD=$'\033[1m'    DIM=$'\033[2m'
+  GRN=$'\033[0;32m' YLW=$'\033[0;33m' BLU=$'\033[0;34m'
+  CYN=$'\033[0;36m' RED=$'\033[0;31m' WHT=$'\033[1;37m'
+  GRY=$'\033[0;90m'
+else
+  R='' BOLD='' DIM='' GRN='' YLW='' BLU='' CYN='' RED='' WHT='' GRY=''
+fi
+
+_ok()   { echo -e "  ${GRN}✓${R}  $*"; }
+_info() { echo -e "  ${BLU}›${R}  $*"; }
+_warn() { echo -e "  ${YLW}⚠${R}   $*"; }
+_err()  { echo -e "  ${RED}✗${R}  $*" >&2; }
+_dim()  { echo -e "     ${GRY}$*${R}"; }
+_hr()   { echo -e "\n  ${DIM}────────────────────────────────────────────────────────${R}"; }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────────────────────────────────────
+
+_show_vm_list() {
+  echo ""
+  echo -e "  ${BOLD}${WHT}Virtual Machines${R}"
+  _hr
+  echo ""
+  sudo virsh list --all 2>/dev/null | while IFS= read -r line; do
+    if echo "$line" | grep -q "running"; then
+      echo -e "  ${GRN}${line}${R}"
+    elif echo "$line" | grep -q "shut off"; then
+      echo -e "  ${GRY}${line}${R}"
+    else
+      echo -e "  ${DIM}${line}${R}"
+    fi
+  done
+  echo ""
+}
+
+_vm_state() {
+  sudo virsh domstate "$VM_NAME" 2>/dev/null | tr -d ' \n' || echo "unknown"
+}
+
+_check_virt_viewer() {
+  if ! command -v virt-viewer &>/dev/null; then
+    _err "virt-viewer is not installed."
+    echo ""
+    echo -e "  ${GRY}Fedora:  ${CYN}sudo dnf install virt-viewer${R}"
+    echo -e "  ${GRY}Ubuntu:  ${CYN}sudo apt install virt-viewer${R}"
+    echo ""
+    exit 1
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FLAGS
+# ─────────────────────────────────────────────────────────────────────────────
+
+MODE="connect"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --stop)   MODE="stop";   shift ;;
+    --status) MODE="status"; shift ;;
+    --help|-h)
+      cat <<EOF
+
+  ${BOLD}creatorx${R} — creator-space Windows VM manager
+
+  ${BOLD}USAGE${R}
+    creatorx            start VM → open virt-viewer (default)
+    creatorx --stop     gracefully shut down the VM
+    creatorx --status   show VM status only
+    creatorx --help
+
+  ${BOLD}VM${R}
+    Name    : ${VM_NAME}
+    Access  : virt-viewer (GUI)
+    URI     : ${VIRSH_URI}
+
+  ${BOLD}REQUIREMENTS${R}
+    sudo dnf install virt-viewer   # if not already installed
+
+EOF
+      exit 0
+      ;;
+    *) _err "Unknown flag: $1"; exit 1 ;;
+  esac
+done
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BANNER
+# ─────────────────────────────────────────────────────────────────────────────
+
+echo ""
+echo -e "  ${BOLD}${WHT}creatorx${R}${GRY} — creator-space Windows VM${R}"
+
+_show_vm_list
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MODE: STATUS
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ "$MODE" == "status" ]]; then
+  state="$(_vm_state)"
+  echo -e "  ${GRY}VM     ${CYN}${VM_NAME}${R}"
+  echo -e "  ${GRY}State  ${R}${state}"
+  echo ""
+  exit 0
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MODE: STOP
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ "$MODE" == "stop" ]]; then
+  state="$(_vm_state)"
+  if [[ "$state" == "shut off" ]]; then
+    _ok "VM is already shut off."
+    echo ""
+    exit 0
+  fi
+  _info "Shutting down ${VM_NAME}..."
+  sudo virsh shutdown "$VM_NAME"
+  _ok "Shutdown signal sent. Windows will stop shortly."
+  echo ""
+  exit 0
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MODE: CONNECT (default — start + virt-viewer)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_check_virt_viewer
+
+state="$(_vm_state)"
+
+case "$state" in
+  "running")
+    _ok "VM is already running."
+    ;;
+  "shut off" | "")
+    _info "Starting ${VM_NAME}..."
+    sudo virsh start "$VM_NAME"
+    _ok "VM started."
+    echo ""
+    _info "Waiting ${VM_START_WAIT}s for VM to initialize..."
+    sleep "$VM_START_WAIT"
+    ;;
+  "paused")
+    _info "Resuming ${VM_NAME}..."
+    sudo virsh resume "$VM_NAME"
+    _ok "VM resumed."
+    ;;
+  *)
+    _warn "Unexpected VM state: '${state}' — attempting to start..."
+    sudo virsh start "$VM_NAME" || true
+    sleep "$VM_START_WAIT"
+    ;;
+esac
+
+echo ""
+_info "Opening virt-viewer..."
+_dim "virt-viewer --connect ${VIRSH_URI} ${VM_NAME}"
+echo ""
+
+# Launch virt-viewer — connects to the VM display
+# --wait: keep retrying connection until VM display is ready
+virt-viewer --connect "$VIRSH_URI" --wait "$VM_NAME" &
+
+_ok "virt-viewer launched  ${GRY}(window opening)${R}"
+echo ""
+_dim "Tip: use  creatorx --stop  to shut down the VM when done."
+echo ""

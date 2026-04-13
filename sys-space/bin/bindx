@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# sys-space/bin/bindx
+#
+# Rebind the ACPI battery driver after a hot-swap — companion to unbindx.
+# Equivalent to: unbindx --rebind
+#
+# Usage:
+#   bindx          show status → choose battery → rebind
+#   bindx --help
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────────────────────────────────────────
+#   v1.0.0 — Initial release. Thin wrapper: resolves unbindx via BASH_SOURCE
+#             and delegates to unbindx --rebind. Standalone so tab-completion,
+#             --help, and direct invocation all work naturally.
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+
+_SELF_BIN="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+UNBINDX="$_SELF_BIN/unbindx"
+
+if [[ "$*" == *"--help"* || "$*" == *"-h"* ]]; then
+  cat <<'EOF'
+
+  bindx — rebind the Lenovo X260 battery driver after hot-swap
+
+  USAGE
+    bindx          show battery status → choose battery → rebind
+    bindx --help
+
+  This is a companion to unbindx.
+  Equivalent to: unbindx --rebind
+
+  HOT-SWAP WORKFLOW
+    1.  unbindx     detach driver for the battery you want to swap
+    2.  swap it
+    3.  bindx       reattach the driver
+
+EOF
+  exit 0
+fi
+
+if [[ ! -x "$UNBINDX" ]]; then
+  echo "  ✗  unbindx not found at $UNBINDX" >&2
+  exit 1
+fi
+
+exec "$UNBINDX" --rebind "$@"

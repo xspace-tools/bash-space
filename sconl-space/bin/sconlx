@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+# sconl-space/bin/sconlx
+# iSconl personal workspace CLI — the entry point for everything.
+# Routes to scope/space/spark/cross-system lib handlers.
+# Maintains full backward compatibility with sconlx v1.0.0 commands.
+#
+# Usage: sconlx [system] [command] [args] [flags]
+# Run with no args for the full iSconl dashboard.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────────────────────────────────────────
+#   v2.0.0 — Full iSconl suite. Scope + Space + Spark + Cross-system.
+#             Flat-file mode (no Flutter needed) + SQLite mode (Flutter apps).
+#             Legacy v1.0.0 commands preserved unchanged.
+#   v1.0.0 — Initial. Tasks, notes, journal, plan. Flat-file only.
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Version ──
+_SCONLX_VERSION="2.0.0"
+
+# ── Path resolution ──
+# Resolve symlinks to find the real script location.
+# xspace is portable — it can be cloned anywhere, so we never hardcode paths.
+_SCONLX_BIN="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+_SCONLSPACE_DIR="$(cd "$_SCONLX_BIN/.." && pwd)"
+_XSPACE_ROOT="$(cd "$_SCONLSPACE_DIR/.." && pwd)"
+
+# ── Library directory ──
+_SCONLSPACE_LIB_DIR="$_SCONLSPACE_DIR/lib"
+_EQUICYCLE_PY="$_SCONLSPACE_LIB_DIR/equicycle.py"
+
+# ── Data directory ──
+# Flat-file data lives here. SQLite mode auto-detects ~/.local/share/isconl/
+_SCONLSPACE_DATA_DIR="$_SCONLSPACE_DIR/data"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BOOTSTRAP — source xspace.conf then all lib modules
+# ─────────────────────────────────────────────────────────────────────────────
+
+_XSPACE_CONF="$_XSPACE_ROOT/xspace.conf"
+if [[ -f "$_XSPACE_CONF" ]]; then
+  source "$_XSPACE_CONF"
+fi
+
+# Source all lib files in dependency order
+for _lib in ui.sh db.sh events.sh scope.sh space.sh spark.sh cross.sh; do
+  _lib_path="$_SCONLSPACE_LIB_DIR/$_lib"
+  if [[ -f "$_lib_path" ]]; then
+    source "$_lib_path"
+  else
+    printf '  ✗  Missing lib: %s\n' "$_lib_path" >&2
+    exit 1
+  fi
+done
+unset _lib _lib_path
+
+# Initialize data layer — detects mode (flat vs sqlite), sets all paths
+_FLAT_DIR="$_SCONLSPACE_DATA_DIR"
+_db_init || true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELP TEXT
+# ─────────────────────────────────────────────────────────────────────────────
+
+_sconlx_help() {
+  cat >&2 <<HELP
+
+  $(_ui_bold "sconlx") v$_SCONLX_VERSION — iSconl personal workspace CLI
+  Data mode: $_DATA_MODE
+
+  $(_ui_bold "USAGE")
+    sconlx [system] [command] [args] [--flags]
+
+  $(_ui_bold "SYSTEMS")
+    $(_ui_scope "scope (s)")   Daily rhythm: inbox, tasks, goals, reflection, cycle
+    $(_ui_space "space (sp)")  Domain portfolio: businesses, platforms, projects, hobbies
+    $(_ui_spark "spark (k)")   Inner world: journal, ideas, learning, DIA
+    x            Cross-system: dashboard, events, search, export
+
+  $(_ui_bold "SCOPE COMMANDS")
+    sconlx scope                          Full Scope dashboard
+    sconlx scope inbox [add|triage]       Inbox management
+    sconlx scope inbox add [text]         Fast capture
+    sconlx scope today [add|clear]        Today's tasks
+    sconlx scope task [list|add|done|defer|del|show]
+    sconlx scope goal [list|add|show|kpi|done]
+    sconlx scope reflect [view|history]   Daily reflection
+    sconlx scope cycle [list|plan|review] Cycle management
+    sconlx scope identity [edit|north-star|season]
+    sconlx scope plan                     Weekly planner
+
+  $(_ui_bold "SPACE COMMANDS")
+    sconlx space                          Portfolio overview
+    sconlx space list [--active|--type]   List spaces
+    sconlx space show <name|id>           Space detail
+    sconlx space add                      Create space
+    sconlx space review <name|id>         Health review
+    sconlx space review --all             Review all overdue
+    sconlx space project [list|add]       Projects
+    sconlx space task [list|add]          Tasks (push to Scope)
+    sconlx space kpi [log|list|add]       KPI tracking
+    sconlx space contact [list|add|interaction]
+    sconlx space event [list|add]         Event log
+    sconlx space health                   Portfolio health
+
+  $(_ui_bold "SPARK COMMANDS")
+    sconlx spark                          Spark overview
+    sconlx journal                        Today's journal (editor)
+    sconlx spark journal [view|list|new]
+    sconlx spark journal YYYY-MM-DD       Open entry for date
+    sconlx note [title]                   Quick note capture
+    sconlx spark idea [list|add|show|develop|advance|export|archive]
+    sconlx spark learn [list|add|show|progress|highlight|done|synthesise]
+    sconlx spark dia [list|show|overdue|add|log]
+
+  $(_ui_bold "CROSS-SYSTEM")
+    sconlx x                              Full iSconl dashboard
+    sconlx x events [process]            Event bus
+    sconlx x status                       DB + data status
+    sconlx x search <query>               Search all systems
+    sconlx x export                       Export all data
+    sconlx x backup                       Backup via backupx
+
+  $(_ui_bold "LEGACY ALIASES (v1.0.0 — unchanged)")
+    sconlx task [add|list|done|del]  →  sconlx scope task
+    sconlx journal                   →  sconlx spark journal
+    sconlx note [list]               →  sconlx spark note
+    sconlx plan                      →  sconlx scope plan
+
+  $(_ui_bold "GLOBAL FLAGS")
+    --help, -h          This help text
+    --version, -v       Version + data mode
+    --status            DB/file status
+    --json              JSON output (where supported)
+    --no-color          Disable ANSI colors  (or: SCONLX_COLOR=0)
+    --dry-run           Show what would happen, write nothing
+
+  $(_ui_bold "ENVIRONMENT")
+    EDITOR              Editor for journal/notes (default: nano)
+    SCONLX_COLOR=0      Disable color output
+    ISCONL_DATA_DIR     Override SQLite data directory
+
+HELP
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VERSION / STATUS
+# ─────────────────────────────────────────────────────────────────────────────
+
+_sconlx_version() {
+  printf 'sconlx %s (%s mode)\n' "$_SCONLX_VERSION" "$_DATA_MODE" >&2
+  local data_path="$_SCONLSPACE_DATA_DIR"
+  [[ "$_DATA_MODE" == "sqlite" ]] && data_path="$_ISCONL_DATA_DIR"
+  printf 'data: %s\n' "$data_path" >&2
+}
+
+_sconlx_status() {
+  _cross_status
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STARTUP CHECKS
+# Process pending events on startup (silently, non-blocking)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_sconlx_startup() {
+  # Don't process events for --help, --version, or --status — keep those fast
+  local first_arg="${1:-}"
+  case "$first_arg" in
+    --help|-h|--version|-v|--status|--no-color|--json) return 0 ;;
+  esac
+
+  # Process any pending cross-system events quietly
+  local pending_count; pending_count="$(_ev_status)"
+  if [[ "$pending_count" -gt 0 && "$pending_count" -lt 10 ]]; then
+    # Auto-process small batches silently — let the user know if noteworthy
+    _ev_process_all 2>/dev/null || true
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ROUTER
+# ─────────────────────────────────────────────────────────────────────────────
+
+_sconlx_route() {
+  local cmd="${1:-}"
+  shift 2>/dev/null || true
+
+  # Handle global flags first
+  case "$cmd" in
+    --help|-h)     _sconlx_help; return 0 ;;
+    --version|-v)  _sconlx_version; return 0 ;;
+    --status)      _sconlx_status; return 0 ;;
+    --no-color)    _UI_COLOR=0; cmd="${1:-}"; shift 2>/dev/null || true ;;
+    --json)        _SCONLX_JSON=1; cmd="${1:-}"; shift 2>/dev/null || true ;;
+    --dry-run)     _SCONLX_DRY_RUN=1; cmd="${1:-}"; shift 2>/dev/null || true ;;
+  esac
+
+  # Primary system routes
+  case "${cmd:-dashboard}" in
+    # Systems
+    scope|s)         _scope_route "$@" ;;
+    space|sp)        _space_route "$@" ;;
+    spark|k)         _spark_route "$@" ;;
+    x|cross)         _cross_route "$@" ;;
+
+    # ── Legacy v1.0.0 aliases — all preserved unchanged ──
+    task)            _scope_route task "$@" ;;
+    journal)         _spark_route journal "$@" ;;
+    note)            _spark_route note "$@" ;;
+    plan)            _scope_route plan "$@" ;;
+
+    # Dashboard — bare sconlx with no args
+    ""|dashboard)    _cross_dashboard ;;
+
+    # Unknown
+    *)
+      _ui_err "Unknown command: $cmd" >&2
+      printf '\n  Run: sconlx --help  for all commands\n\n' >&2
+      return 1
+      ;;
+  esac
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN
+# ─────────────────────────────────────────────────────────────────────────────
+
+_sconlx_startup "$@" || true
+_sconlx_route "$@" || true

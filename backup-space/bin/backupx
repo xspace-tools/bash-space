@@ -5,7 +5,7 @@
 # Reads job definitions from backup-space/config/backups.conf.
 #
 # Archive-sync: pushes local → dest. Files deleted locally are moved to
-# dest/_archivex/YYYYMMDD_filename — never silently deleted.
+# dest/_archivex/YYYYMMDD/filename — never silently deleted.
 #
 # Supported methods : rclone | rsync | tar
 # OS support        : Linux (Fedora) · macOS · Windows (Git Bash / MSYS2)
@@ -13,22 +13,28 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v0.3.1 — Fixed IFS word-splitting bug: global IFS=$'\n\t' prevented $options
-#             from splitting on spaces, causing rclone to receive multi-flag
-#             strings like "--transfers=8 --drive-chunk-size=64M" as a single
-#             token. All three method functions now use `IFS=' ' read -ra _opts`
-#             to split into a proper array before passing to the tool.
-#             RCLONE_REMOTE updated to 'onedrive-sconl'.
-#   v0.3.0 — Full rewrite. Interactive guided job-selection menu. Archive-sync
-#             replaces copy/sync: deletions in dest moved to _archivex/ (not
-#             deleted). Cross-platform: Linux/macOS/Windows Git Bash. LOCAL_BASE
-#             auto-resolved per OS (~/_ or ~/Desktop/_). {LOCAL_BASE} and
-#             {RCLONE_REMOTE} placeholders expanded at runtime. --init flag for
-#             first-run remote→local pull. Rclone auth check before any cloud
-#             job. Named jobs + ## group headers in conf. --parallel flag for
-#             concurrent execution. Summary report. CONFIG block.
-#   v0.2.0 — Moved to backup-space/bin/. Fixed conf path via BASH_SOURCE[0].
-#             Added --help, --list, --dry-run flags.
+#   v0.4.1 — Bug fix: _migrate_logs() returned non-zero (exit code 1) when no
+#             flat logs existed to migrate, because the final statement
+#             `(( migrated > 0 )) && echo "..."` evaluates to exit code 1 when
+#             migrated==0. With set -euo pipefail and _migrate_logs called at
+#             the top level (before _banner), the script exited silently before
+#             printing anything. Fix: call site changed to `_migrate_logs || true`.
+#             Rule added to Shell Script Conventions: any top-level function call
+#             whose last statement is an (( expr )) must be guarded with || true.
+#   v0.4.0 — Date-folder archives: _archivex/YYYYMMDD/filename (was YYYYMMDD_filename).
+#             Date-folder logs: logs/YYYYMMDD/backupx_name.log.
+#             _migrate_logs() migrates existing flat logs on startup.
+#             rclone archive-sync now uses --backup-dir + --track-renames:
+#               --backup-dir handles deleted files natively (moved to archive dir)
+#               --track-renames detects renamed files → server-side rename, NOT archive
+#             Smart --init: if local folder exists, syncs (updates) instead of
+#               fresh copy. Avoids re-downloading already-present folders.
+#             Hierarchical job display: level labels (◈ Meta / ▲ High / ● Mid /
+#               ○ Low / · Leaf) shown in group headers. Quit option [q] added
+#               to job selection. Existing logs migrated to date-folder structure.
+#   v0.3.1 — Fixed IFS word-splitting bug. RCLONE_REMOTE → onedrive-sconl.
+#   v0.3.0 — Full interactive rewrite. Archive-sync. --init. Auth self-healing.
+#   v0.2.0 — Moved to backup-space/bin/. Fixed conf path.
 #   v0.1.0 — Initial release.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -90,6 +96,29 @@ esac
 mkdir -p "$LOG_DIR"
 
 # ─────────────────────────────────────────────────────────────────────────────
+# LOG MIGRATION — move flat YYYYMMDD_name.log → YYYYMMDD/name.log
+# ─────────────────────────────────────────────────────────────────────────────
+# Defined here, called AFTER colors are set up (below).
+
+_migrate_logs() {
+  local migrated=0
+  for f in "$LOG_DIR"/????????_*.log; do
+    [[ -f "$f" ]] || continue
+    local base; base="$(basename "$f")"
+    [[ ! "$base" =~ ^[0-9]{8}_ ]] && continue
+    local date_part="${base:0:8}"
+    local name_part="${base:9}"
+    local dest_dir="$LOG_DIR/$date_part"
+    mkdir -p "$dest_dir"
+    mv "$f" "$dest_dir/$name_part"
+    (( ++migrated )) || true
+  done
+  # echo only — _info not yet defined when this is defined; called after colors
+  (( migrated > 0 )) && echo "  →  Migrated ${migrated} log(s) → date-folder structure"
+  return 0
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # COLORS & UI
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -108,6 +137,13 @@ _warn() { echo -e "  ${YLW}⚠${R}   $*"; }
 _err()  { echo -e "  ${RED}✗${R}  $*" >&2; }
 _dim()  { echo -e "     ${GRY}$*${R}"; }
 _hr()   { echo -e "\n  ${DIM}────────────────────────────────────────────────────────${R}"; }
+
+# Run log migration now that helpers are available.
+# Guard with || true: when no flat logs exist to migrate, _migrate_logs returns
+# non-zero (the (( migrated > 0 )) final statement evaluates to exit code 1).
+# Without the guard, set -euo pipefail kills the script here — before _banner
+# prints anything, causing silent exit. See Bug 012.
+_migrate_logs || true
 
 _banner() {
   local ts
@@ -152,7 +188,7 @@ while [[ $# -gt 0 ]]; do
   ARCHIVE-SYNC BEHAVIOUR
     Local is always the source of truth. Backups push local → destination.
     Files deleted locally are NOT removed at the destination — they are
-    moved into  dest/_archivex/YYYYMMDD_filename  instead.
+    moved into  dest/_archivex/YYYYMMDD/filename  instead.
     The _archivex folder is created automatically and lives only at the
     destination — never in your local working copy.
 
@@ -165,7 +201,7 @@ while [[ $# -gt 0 ]]; do
     {RCLONE_REMOTE} expands to the RCLONE_REMOTE value set in this script
 
   RCLONE REMOTE
-    Set RCLONE_REMOTE in this script's CONFIG block (currently: onedrive).
+    Set RCLONE_REMOTE in this script's CONFIG block (currently: onedrive-sconl).
     Run  rclone config  to set up or verify your remote.
     Run  backupx --init  to do the first pull of remote folders to local.
 
@@ -175,7 +211,7 @@ while [[ $# -gt 0 ]]; do
     3.  backupx                    # run backups going forward
 
   LOGS
-    backup-space/logs/YYYYMMDD_backupx_<name>.log
+    backup-space/logs/YYYYMMDD/backupx_<name>.log
 
 HELP
       exit 0
@@ -264,7 +300,7 @@ _parse_conf() {
     JOB_OPTIONS+=("$options")
     JOB_GROUPS+=("$current_group")
 
-    (( idx++ )) || true
+    (( ++idx )) || true
   done < "$CONF"
 }
 
@@ -316,12 +352,21 @@ _select_jobs() {
   _hr
   echo ""
   echo -e "  ${GRY}Enter numbers separated by spaces (e.g. ${WHT}1 3 5${R}${GRY}),"
-  echo -e "  press ${WHT}Enter${R}${GRY} or type ${WHT}0${R}${GRY} to run everything.${R}"
+  echo -e "  press ${WHT}Enter${R}${GRY} or type ${WHT}0${R}${GRY} to run everything,"
+  echo -e "  or type ${WHT}q${R}${GRY} to quit.${R}"
   echo ""
   printf "  ${CYN}›${R} "
 
   local input
   read -r input
+
+  # Quit
+  if [[ "${input,,}" == "q" ]]; then
+    echo ""
+    _info "Cancelled."
+    echo ""
+    exit 0
+  fi
 
   # Default / all
   if [[ -z "$input" || "$input" == "0" ]]; then
@@ -415,12 +460,13 @@ _check_rclone_auth() {
 _init_setup() {
   _banner
   echo -e "  ${BOLD}Initial setup — pulling remote folders to local${R}"
-  echo -e "  ${GRY}This is a one-time operation. Run ${CYN}backupx${R}${GRY} afterward for ongoing backups.${R}"
+  echo -e "  ${GRY}Existing local folders are updated (synced), not re-downloaded.${R}"
+  echo -e "  ${GRY}Run ${CYN}backupx${R}${GRY} afterward for ongoing push-to-remote backups.${R}"
 
   _check_rclone_auth || exit 1
 
   local total="${#JOB_NAMES[@]}"
-  local pulled=0 failed=0
+  local pulled=0 updated=0 failed=0
 
   for (( i=0; i<total; i++ )); do
     local method="${JOB_METHODS[$i]}"
@@ -429,35 +475,54 @@ _init_setup() {
     local name="${JOB_NAMES[$i]}"
     local source="${JOB_SOURCES[$i]}"
     local dest="${JOB_DESTS[$i]}"
-    local log_file="$LOG_DIR/${DATE_PREFIX}_backupx_init_${name}.log"
+    local log_dir_day="$LOG_DIR/$DATE_PREFIX"
+    mkdir -p "$log_dir_day"
+    local log_file="$log_dir_day/backupx_init_${name}.log"
 
     echo ""
     echo -e "  ${BOLD}${WHT}${name}${R}"
     echo -e "  ${GRY}remote → ${CYN}${source}${R}"
 
     if [[ "$DRY_RUN" == true ]]; then
-      _dim "[dry-run] rclone copy $dest $source"
+      if [[ -d "$source" ]]; then
+        _dim "[dry-run] rclone sync $dest $source  (update existing)"
+      else
+        _dim "[dry-run] rclone copy $dest $source  (fresh pull)"
+      fi
       continue
     fi
 
-    mkdir -p "$source"
-
-    if rclone copy "$dest" "$source" --progress 2>>"$log_file"; then
-      _ok "Pulled to: ${source}"
-      (( pulled++ )) || true
+    # Smart: update if local exists and has content, fresh pull otherwise
+    if [[ -d "$source" && -n "$(ls -A "$source" 2>/dev/null || true)" ]]; then
+      _dim "Folder exists locally — syncing to update..."
+      if rclone sync "$dest" "$source" --progress 2>>"$log_file"; then
+        _ok "Updated: ${source}"
+        (( ++updated )) || true
+      else
+        _warn "Update failed — see: $(basename "$log_file")"
+        (( ++failed )) || true
+      fi
     else
-      _warn "Pull failed — see: $(basename "$log_file")"
-      (( failed++ )) || true
+      mkdir -p "$source"
+      _dim "Fresh pull..."
+      if rclone copy "$dest" "$source" --progress 2>>"$log_file"; then
+        _ok "Pulled to: ${source}"
+        (( ++pulled )) || true
+      else
+        _warn "Pull failed — see: $(basename "$log_file")"
+        (( ++failed )) || true
+      fi
     fi
   done
 
   echo ""
   _hr
   echo ""
-  [[ $pulled -gt 0 ]] && _ok "$pulled folder(s) pulled to ${LOCAL_BASE}"
-  [[ $failed -gt 0 ]] && _warn "$failed failed — check logs in $LOG_DIR"
+  (( pulled  > 0 )) && _ok "${pulled} folder(s) freshly pulled to ${LOCAL_BASE}"
+  (( updated > 0 )) && _ok "${updated} folder(s) updated (already existed)"
+  (( failed  > 0 )) && _warn "${failed} failed — check logs in ${LOG_DIR}/${DATE_PREFIX}/"
   echo ""
-  echo -e "  ${GRY}Next step: run ${CYN}backupx${R}${GRY} to start syncing.${R}"
+  echo -e "  ${GRY}Next step: run ${CYN}backupx${R}${GRY} to push local changes back to remote.${R}"
   echo ""
 }
 
@@ -465,70 +530,35 @@ _init_setup() {
 # ARCHIVE-SYNC: RCLONE (local → cloud)
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. Find files in dest that do not exist in source (deletions).
-# 2. Move each to dest/_archivex/YYYYMMDD_filename.
+# 2. Move each to dest/_archivex/YYYYMMDD/filename.
 # 3. Sync source → dest (excluding _archivex/).
 
 _archive_sync_rclone() {
   local name="$1" source="$2" dest="$3" options="$4" log_file="$5"
 
-  # Split options string into array using space as IFS (the global IFS is \n\t,
-  # so $options unquoted would NOT word-split on spaces — must use read -ra).
+  # Split options into array (global IFS is \n\t — not space)
   local -a _opts=()
   [[ -n "$options" ]] && IFS=' ' read -ra _opts <<< "$options"
 
-  # ── Step 1: detect deletions ─────────────────────────────────────────────
-  _dim "Scanning for remote-only files..."
+  # Archive dir: dest/_archivex/YYYYMMDD/ — created by rclone automatically
+  local archive_dir="${dest}/${ARCHIVEX_DIR}/${DATE_PREFIX}"
 
-  local dest_files src_files to_archive
-  dest_files="$(rclone lsf "$dest" --recursive \
-    --exclude "${ARCHIVEX_DIR}/**" \
-    2>>"$log_file" | grep -v '/$' | LC_ALL=C sort || true)"
-
-  src_files="$(rclone lsf "$source" --recursive \
-    2>>"$log_file" | grep -v '/$' | LC_ALL=C sort || true)"
-
-  to_archive=""
-  if [[ -n "$dest_files" ]]; then
-    if [[ -n "$src_files" ]]; then
-      to_archive="$(LC_ALL=C comm -23 \
-        <(printf '%s\n' "$dest_files") \
-        <(printf '%s\n' "$src_files") 2>/dev/null || true)"
-    else
-      to_archive="$dest_files"
-    fi
-  fi
-
-  # ── Step 2: archive deletions ────────────────────────────────────────────
-  if [[ -n "$to_archive" ]]; then
-    local count=0
-    while IFS= read -r file; do
-      [[ -z "$file" ]] && continue
-      local bname="${file##*/}"
-      local archived="${DATE_PREFIX}_${bname}"
-      _dim "archiving → ${ARCHIVEX_DIR}/${archived}  (was: ${file})"
-      if [[ "$DRY_RUN" != true ]]; then
-        rclone moveto \
-          "$dest/$file" \
-          "$dest/${ARCHIVEX_DIR}/${archived}" \
-          >>"$log_file" 2>&1 || _warn "Could not archive: $file"
-      fi
-      (( count++ )) || true
-    done <<< "$to_archive"
-    _info "$count deleted file(s) archived to ${ARCHIVEX_DIR}/"
-  else
-    _dim "No deletions detected."
-  fi
-
-  # ── Step 3: sync local → remote ──────────────────────────────────────────
   _info "Syncing → ${dest}"
+  _dim "Deletions archived → ${ARCHIVEX_DIR}/${DATE_PREFIX}/"
+  _dim "Renames tracked server-side (no archive for renamed files)"
 
   if [[ "$DRY_RUN" == true ]]; then
-    _dim "[dry-run] rclone sync $source $dest ${_opts[*]:-}"
+    _dim "[dry-run] rclone sync $source $dest --backup-dir $archive_dir --track-renames"
     return 0
   fi
 
+  # --backup-dir  : files deleted from source are moved here (not deleted at dest)
+  # --track-renames: renamed files are moved server-side — NOT archived
+  # --exclude     : prevent sync from touching the archive folder itself
   rclone sync "$source" "$dest" \
     "${_opts[@]+"${_opts[@]}"}" \
+    --backup-dir "$archive_dir" \
+    --track-renames \
     --exclude "${ARCHIVEX_DIR}/**" \
     >>"$log_file" 2>&1
 }
@@ -572,7 +602,7 @@ _archive_sync_rsync() {
           mv "${dest}/${item}" "${archive_dir}/${archived}"
         fi
       fi
-      (( count++ )) || true
+      (( ++count )) || true
     done <<< "$to_archive"
     _info "$count deleted item(s) archived to ${ARCHIVEX_DIR}/"
   else
@@ -642,7 +672,9 @@ _run_job() {
   local source="${JOB_SOURCES[$idx]}"
   local dest="${JOB_DESTS[$idx]}"
   local options="${JOB_OPTIONS[$idx]}"
-  local log_file="${LOG_DIR}/${DATE_PREFIX}_backupx_${name}.log"
+  local log_dir_day="$LOG_DIR/$DATE_PREFIX"
+  mkdir -p "$log_dir_day"
+  local log_file="$log_dir_day/backupx_${name}.log"
 
   echo ""
   echo -e "  ${BOLD}${WHT}${name}${R}  ${GRY}(${method})${R}"
@@ -676,10 +708,10 @@ _run_job() {
   esac
 
   if [[ "$job_ok" == true ]]; then
-    _ok "Done  ${GRY}→ log: $(basename "$log_file")${R}"
+    _ok "Done  ${GRY}→ log: ${LOG_DIR}/${DATE_PREFIX}/$(basename "$log_file")${R}"
     return 0
   else
-    _err "Failed  ${GRY}→ log: $(basename "$log_file")${R}"
+    _err "Failed  ${GRY}→ log: ${LOG_DIR}/${DATE_PREFIX}/$(basename "$log_file")${R}"
     return 1
   fi
 }
@@ -822,14 +854,14 @@ if [[ "$PARALLEL" == true ]]; then
     _run_job "$idx" & pids+=("$!")
   done
   for pid in "${pids[@]}"; do
-    if wait "$pid"; then (( succeeded++ )) || true
-    else                  (( failed++ ))    || true
+    if wait "$pid"; then (( ++succeeded )) || true
+    else                  (( ++failed ))    || true
     fi
   done
 else
   for idx in "${run_indices[@]}"; do
-    if _run_job "$idx"; then (( succeeded++ )) || true
-    else                      (( failed++ ))    || true
+    if _run_job "$idx"; then (( ++succeeded )) || true
+    else                      (( ++failed ))    || true
     fi
   done
 fi
@@ -851,5 +883,5 @@ if [[ "$DRY_RUN" == true ]]; then
 fi
 
 echo ""
-echo -e "  ${GRY}Logs: ${CYN}${LOG_DIR}${R}"
+echo -e "  ${GRY}Logs: ${CYN}${LOG_DIR}/${DATE_PREFIX}/${R}"
 echo ""

@@ -1,142 +1,190 @@
 #!/usr/bin/env bash
 # sys-space/bin/updatex
 #
-# Workstation system updater + XSpace repo updater.
-# Runs dnf upgrade, flatpak update, dnf autoremove, then optionally
-# pulls the latest xspace repo and re-runs install.sh.
+# System + XSpace repo updater.
 #
-# Workstation-specific — uses dnf (Fedora). Adapt lib/sysupdate.sh for
-# other distros when that abstraction is needed.
+# Usage:
+#   updatex              system packages + xspace repo update (default)
+#   updatex --system     system packages only (dnf, flatpak, autoremove)
+#   updatex --xspace     xspace repo only (git pull + install.sh)
+#   updatex --skip-pull  run install.sh only, no git pull
+#   updatex --help
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v0.2.0 — Fixed broken path: was hardcoded to x-space/update.sh.
-#             Now reads CONFIGURE_DIR from xspace.conf so any future rename
-#             of the orchestrator folder only needs one conf edit.
-#   v0.1.0 — Initial release in sys-space/bin/.
+#   v0.3.0 — Fixed XSPACE_ROOT resolution. updatex lives at sys-space/bin/;
+#             XSPACE_ROOT is two levels up (../../), not one. Previous version
+#             resolved to sys-space/ and couldn't find _configure/update.sh.
+#             Added --help, --system, --xspace flags. Reads CONFIGURE_DIR from
+#             xspace.conf for rename-safe path to update.sh.
+#   v0.2.0 — XSPACE_ROOT auto-detected. --skip-pull flag added.
+#   v0.1.0 — Initial release.
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
+IFS=$'\n\t'
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BOOTSTRAP
+# BOOTSTRAP — resolve XSPACE_ROOT from this script's location
 # ─────────────────────────────────────────────────────────────────────────────
-# SPACE_DIR  = sys-space/    (one up from bin/)
-# XSPACE_ROOT = xspace/       (one further up — where xspace.conf lives)
+# This script lives at:  xspace/sys-space/bin/updatex
+# XSPACE_ROOT is:        xspace/
+# Path:                  bin/ → sys-space/ → xspace/  (two levels up)
 
-_REAL_BIN="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-SPACE_DIR="$(cd "$_REAL_BIN/.." && pwd)"
-XSPACE_ROOT="$(cd "$SPACE_DIR/.." && pwd)"
+_SELF_BIN="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+XSPACE_ROOT="$(cd "$_SELF_BIN/../.." && pwd)"
 
-# Source xspace.conf to get CONFIGURE_DIR — never hardcode "_configure"
 CONF="$XSPACE_ROOT/xspace.conf"
 if [[ ! -f "$CONF" ]]; then
-    echo "updatex: xspace.conf not found at $CONF"
-    echo "         Re-run _configure/install.sh"
+    echo ""
+    echo "  ✗ xspace.conf not found at $CONF"
+    echo "  Expected at the monorepo root: $XSPACE_ROOT/xspace.conf"
+    echo ""
     exit 1
 fi
 source "$CONF"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CONFIG
+# COLORS
 # ─────────────────────────────────────────────────────────────────────────────
 
-# CONFIGURE_DIR is set by xspace.conf (currently "_configure")
-_UPDATE_SCRIPT="$XSPACE_ROOT/$CONFIGURE_DIR/update.sh"
+if [[ -t 1 && "${NO_COLOR:-}" != "1" ]]; then
+  R=$'\033[0m' BOLD=$'\033[1m' DIM=$'\033[2m'
+  GRN=$'\033[0;32m' YLW=$'\033[0;33m' CYN=$'\033[0;36m'
+  RED=$'\033[0;31m' WHT=$'\033[1;37m' GRY=$'\033[0;90m'
+else
+  R='' BOLD='' DIM='' GRN='' YLW='' CYN='' RED='' WHT='' GRY=''
+fi
 
-ok()   { echo "  ✓ $*"; }
-warn() { echo "  ⚠  $*"; }
-log()  { echo "  → $*"; }
-hr()   { echo ""; echo "  ── $* ──────────────────────────────────────────────────"; }
-
-# ─────────────────────────────────────────────────────────────────────────────
-# HELP
-# ─────────────────────────────────────────────────────────────────────────────
-
-usage() {
-    cat <<'HELP'
-
-  updatex — system + XSpace updater
-
-  USAGE
-    updatex                  system update AND xspace repo update (default)
-    updatex --system         system packages only (dnf + flatpak)
-    updatex --xspace         xspace repo only (git pull + install.sh)
-    updatex --skip-pull      xspace install.sh only, no git pull
-    updatex --help
-
-  System update steps:
-    1. sudo dnf upgrade --refresh
-    2. flatpak update
-    3. sudo dnf autoremove
-
-  XSpace update steps:
-    1. git pull --ff-only origin main (from xspace repo root)
-    2. _configure/install.sh (re-wires all symlinks and PATH entries)
-
-HELP
-}
+ok()   { echo -e "  ${GRN}✓${R}  $*"; }
+warn() { echo -e "  ${YLW}⚠${R}   $*"; }
+err()  { echo -e "  ${RED}✗${R}  $*" >&2; }
+info() { echo -e "  ${CYN}›${R}  $*"; }
+hr()   { echo ""; echo -e "  ${DIM}── $* ──────────────────────────────────────────────────${R}"; }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PARSE ARGS
+# FLAGS
 # ─────────────────────────────────────────────────────────────────────────────
 
-RUN_SYSTEM=true
-RUN_XSPACE=true
+DO_SYSTEM=true
+DO_XSPACE=true
 SKIP_PULL=false
 
-for arg in "$@"; do
-    case "$arg" in
-        --system)    RUN_XSPACE=false ;;
-        --xspace)    RUN_SYSTEM=false ;;
-        --skip-pull) SKIP_PULL=true   ;;
-        --help|-h)   usage; exit 0    ;;
-        *) echo "updatex: unknown option '$arg'"; usage; exit 1 ;;
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --system)     DO_SYSTEM=true;  DO_XSPACE=false; shift ;;
+        --xspace)     DO_SYSTEM=false; DO_XSPACE=true;  shift ;;
+        --skip-pull)  SKIP_PULL=true;  shift ;;
+        --help|-h)
+            cat <<EOF
+
+  ${BOLD}updatex${R} — system + XSpace updater
+
+  ${BOLD}USAGE${R}
+    updatex              system packages + xspace repo (default)
+    updatex --system     system packages only
+    updatex --xspace     xspace repo only
+    updatex --skip-pull  re-run install.sh without git pull
+    updatex --help
+
+  ${BOLD}SYSTEM${R}
+    Fedora: dnf upgrade  →  flatpak update  →  dnf autoremove
+
+  ${BOLD}XSPACE${R}
+    git pull --ff-only origin main  →  _configure/install.sh
+
+EOF
+            exit 0
+            ;;
+        *) warn "Unknown flag: $1 — try --help"; exit 1 ;;
     esac
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SYSTEM UPDATE (Fedora — dnf)
+# VALIDATE — update.sh path before doing anything
 # ─────────────────────────────────────────────────────────────────────────────
 
-if [[ "$RUN_SYSTEM" == true ]]; then
-    hr "System update"
+UPDATE_SCRIPT="$XSPACE_ROOT/$CONFIGURE_DIR/update.sh"
 
-    log "dnf upgrade..."
-    sudo dnf upgrade --refresh -y
-    ok "dnf upgrade complete"
-
-    log "flatpak update..."
-    flatpak update -y 2>/dev/null && ok "flatpak update complete" \
-        || warn "flatpak update failed (non-fatal)"
-
-    log "dnf autoremove..."
-    sudo dnf autoremove -y 2>/dev/null || true
-    ok "autoremove complete"
+if [[ "$DO_XSPACE" == true && ! -f "$UPDATE_SCRIPT" ]]; then
+    err "Orchestrator update script not found:"
+    echo -e "  ${GRY}Expected:       ${CYN}${UPDATE_SCRIPT}${R}"
+    echo -e "  ${GRY}CONFIGURE_DIR:  ${CYN}${CONFIGURE_DIR}${R}  ${GRY}(from xspace.conf)${R}"
+    echo -e "  ${GRY}XSPACE_ROOT:    ${CYN}${XSPACE_ROOT}${R}"
+    echo ""
+    echo -e "  ${GRY}Verify the folder exists and contains install.sh + update.sh.${R}"
+    echo ""
+    exit 1
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# XSPACE REPO UPDATE
+# HEADER
 # ─────────────────────────────────────────────────────────────────────────────
 
-if [[ "$RUN_XSPACE" == true ]]; then
-    hr "XSpace update"
+echo ""
+echo -e "  ${BOLD}${WHT}updatex${R}${GRY} — system + XSpace updater${R}"
+echo -e "  ${GRY}root: ${CYN}${XSPACE_ROOT}${R}"
 
-    if [[ ! -f "$_UPDATE_SCRIPT" ]]; then
-        echo ""
-        echo "  ✗ orchestrator update script not found at $_UPDATE_SCRIPT"
-        echo "  CONFIGURE_DIR in xspace.conf is set to: $CONFIGURE_DIR"
-        echo "  Verify the folder name matches."
-        exit 1
-    fi
+# ─────────────────────────────────────────────────────────────────────────────
+# SYSTEM UPDATE
+# ─────────────────────────────────────────────────────────────────────────────
 
-    if [[ "$SKIP_PULL" == true ]]; then
-        exec "$_UPDATE_SCRIPT" --skip-pull
+if [[ "$DO_SYSTEM" == true ]]; then
+    hr "System packages"
+
+    if command -v dnf &>/dev/null; then
+        info "dnf upgrade..."
+        sudo dnf upgrade -y
+        ok "dnf upgrade complete"
+
+        if command -v flatpak &>/dev/null; then
+            info "flatpak update..."
+            flatpak update -y
+            ok "flatpak update complete"
+        fi
+
+        info "dnf autoremove..."
+        sudo dnf autoremove -y
+        ok "dnf autoremove complete"
+    elif command -v apt &>/dev/null; then
+        info "apt update + upgrade..."
+        sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y
+        ok "apt upgrade complete"
     else
-        exec "$_UPDATE_SCRIPT"
+        warn "No supported package manager found (dnf / apt)"
     fi
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# XSPACE UPDATE
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ "$DO_XSPACE" == true ]]; then
+    hr "XSpace update"
+    echo -e "  ${GRY}root: ${CYN}${XSPACE_ROOT}${R}"
+    echo ""
+
+    if [[ "$SKIP_PULL" == false ]]; then
+        info "git pull --ff-only origin main..."
+        cd "$XSPACE_ROOT"
+        if git pull --ff-only origin main; then
+            ok "Repository up to date"
+        else
+            warn "git pull failed — check remote and branch name."
+            warn "Re-run with --skip-pull to just re-run install.sh."
+            exit 1
+        fi
+        echo ""
+    else
+        info "Skipping git pull (--skip-pull)"
+    fi
+
+    info "Re-running install.sh..."
+    echo ""
+    exec "$UPDATE_SCRIPT" --skip-pull
 fi
 
 echo ""
-ok "All done."
+ok "All updates complete."
+echo ""

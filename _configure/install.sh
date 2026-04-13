@@ -10,22 +10,21 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v0.6.0 — Step 4 rewritten: gitspace completion now registered via a stable
-#             symlink at ~/.local/share/xspace/gitspace-completion.sh. The RC
-#             line references $HOME (not an absolute path), so moving the repo
-#             never breaks the shell. Re-running install.sh after a move updates
-#             the symlink in one step — no manual .bashrc editing needed. Old
-#             absolute-path RC lines from v0.5.0 are cleaned up automatically.
-#             Step 2 skips conf rewrite when backups.conf already exists (was
-#             already idempotent, now also avoids touching a customised conf).
-#   v0.5.0 — Folder renamed x-space/ → _configure/. Path comments updated.
-#             All tool code has moved to their respective spaces — this script
-#             is now a pure orchestrator.
-#   v0.4.0 — (_configure was x-space) All tool code removed from _configure/bin.
-#             animate-space/bin and lib created. sys-space and backup-space
-#             scaffolded. backup-space/config/backups.conf.example written.
-#   v0.3.0 — CONF path fixed to XSPACE_ROOT. Added animate-svg dirs.
-#   v0.2.0 — Renamed bash-space → x-space; monorepo-aware.
+#   v0.8.0 — sconl-space expanded for full iSconl suite. Step 1 creates the
+#             complete directory tree: scope/, space/, spark/, reflections/,
+#             journal/, notes/ under sconl-space/data/. Step 9 initializes
+#             all iSconl flat-file TSV headers. ISCONL_DATA_DIR created for
+#             future SQLite mode. Stale PATH cleanup extended for all spaces.
+#             xspace.conf stale entry patterns updated for sconl-space/bin.
+#   v0.7.1 — Critical fix: PATH_LINE now writes \$PATH (escaped) so the guard
+#             in .bashrc references $PATH at shell startup, not at install time.
+#             Step 3 strips stale PATH entries for all space bin dirs.
+#   v0.7.0 — sconl-space added. serverx/creatorx wired. sconl-space data init.
+#   v0.6.0 — Step 4 rewritten: gitspace completion via stable symlink.
+#   v0.5.0 — x-space → _configure rename. Pure orchestrator.
+#   v0.4.0 — animate-space/bin and lib. sys-space and backup-space scaffolded.
+#   v0.3.0 — CONF path fixed. animate-svg dirs added.
+#   v0.2.0 — bash-space → x-space.
 #   v0.1.0 — Initial installer.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -35,7 +34,7 @@ IFS=$'\n\t'
 # ─────────────────────────────────────────────────────────────────────────────
 # BOOTSTRAP
 # ─────────────────────────────────────────────────────────────────────────────
-# _X_DIR    = xspace/_configure/   (NEVER named XSPACE_DIR — see xspace.conf warning)
+# _X_DIR    = xspace/_configure/   (NEVER named XSPACE_DIR — see xspace.conf)
 # XSPACE_ROOT = xspace/            (where xspace.conf lives)
 
 _X_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
@@ -88,12 +87,27 @@ ABS_BK_CONFIG="$XSPACE_ROOT/$BACKUPSPACE_CONFIG_DIR"
 ABS_BK_LOGS="$XSPACE_ROOT/$BACKUPSPACE_LOG_DIR"
 ABS_BK_CONF="$XSPACE_ROOT/$BACKUPSPACE_CONF"
 
+# sconl-space
+ABS_SCONLSPACE="$XSPACE_ROOT/$SCONLSPACE_DIR"
+ABS_SC_BIN="$ABS_SCONLSPACE/bin"
+ABS_SC_LIB="$ABS_SCONLSPACE/lib"
+ABS_SC_DATA="$ABS_SCONLSPACE/data"
+
+# sconl-space/data subdirectories (flat-file mode structure)
+ABS_SC_DATA_SCOPE="$ABS_SC_DATA/scope"
+ABS_SC_DATA_SCOPE_REFLECTIONS="$ABS_SC_DATA/scope/reflections"
+ABS_SC_DATA_SPACE="$ABS_SC_DATA/space"
+ABS_SC_DATA_SPARK="$ABS_SC_DATA/spark"
+ABS_SC_DATA_JOURNAL="$ABS_SC_DATA/journal"
+ABS_SC_DATA_NOTES="$ABS_SC_DATA/notes"
+
+# iSconl shared data directory (SQLite mode — outside repo)
+ABS_ISCONL_DATA="${ISCONL_DATA_DIR:-$HOME/.local/share/isconl}"
+ABS_ISCONL_EXPORTS="$ABS_ISCONL_DATA/exports"
+
 # gitspace completion — stable share location (move-safe)
-# The RC line always reads: $HOME/.local/share/xspace/gitspace-completion.sh
-# This symlink is updated by every install run, so moving the repo = re-run install.
 XSPACE_SHARE="$HOME/.local/share/xspace"
 COMP_SYMLINK="$XSPACE_SHARE/gitspace-completion.sh"
-# The RC line — uses $HOME variable, never a hardcoded path
 COMP_LINE='_xsp="$HOME/.local/share/xspace/gitspace-completion.sh"; [[ -f "$_xsp" ]] && source "$_xsp"; unset _xsp'
 
 PILLOW_PKG="Pillow"
@@ -138,12 +152,24 @@ remove_pattern_from_rc() {
     fi
 }
 
+# Initialize a TSV file with a header row if it doesn't exist yet.
+# Idempotent — never overwrites existing data.
+init_tsv() {
+    local file="$1" header="$2"
+    if [[ ! -f "$file" ]]; then
+        printf '%b\n' "$header" > "$file"
+        ok "Initialized: $(basename "$file")"
+    else
+        ok "Present: $(basename "$file")"
+    fi
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # HEADER
 # ─────────────────────────────────────────────────────────────────────────────
 
 echo ""
-echo "  XSpace installer v0.6.0"
+echo "  XSpace installer v0.8.0"
 echo "  root : $XSPACE_ROOT"
 echo "  bin  : $USER_BIN"
 echo "  rc   : $SHELL_RC"
@@ -161,12 +187,27 @@ mkdir -p "$XSPACE_ROOT/$ANIMATEX_SVG_FONTS_DIR"
 mkdir -p "$GITSPACE_LOG_DIR"
 mkdir -p "$ABS_SYS_BIN" "$ABS_SYS_LIB"
 mkdir -p "$ABS_BK_BIN" "$ABS_BK_LIB" "$ABS_BK_CONFIG" "$ABS_BK_LOGS"
+
+# sconl-space: bin, lib, and full data tree
+mkdir -p "$ABS_SC_BIN" "$ABS_SC_LIB"
+mkdir -p "$ABS_SC_DATA"
+mkdir -p "$ABS_SC_DATA_SCOPE"
+mkdir -p "$ABS_SC_DATA_SCOPE_REFLECTIONS"
+mkdir -p "$ABS_SC_DATA_SPACE"
+mkdir -p "$ABS_SC_DATA_SPARK"
+mkdir -p "$ABS_SC_DATA_JOURNAL"
+mkdir -p "$ABS_SC_DATA_NOTES"
+
+# iSconl shared data dir (SQLite mode — outside repo, never committed)
+mkdir -p "$ABS_ISCONL_DATA"
+mkdir -p "$ABS_ISCONL_EXPORTS"
+
 mkdir -p "$XSPACE_SHARE"
 
 ok "All directories ready"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 2 — BACKUPS.CONF (first install only — never overwrite a customised conf)
+# STEP 2 — BACKUPS.CONF (first install only — never overwrite)
 # ─────────────────────────────────────────────────────────────────────────────
 hr "backup-space config"
 
@@ -178,17 +219,24 @@ if [[ ! -f "$ABS_BK_CONF" ]]; then
 # {RCLONE_REMOTE} → the RCLONE_REMOTE value set in backupx
 #
 # Run: backupx --help   for full documentation.
-# Run: backupx --init   to pull remote folders to local (first time).
 EOF
-    ok "Created backup-space/config/backups.conf (starter)"
+    ok "Created starter backups.conf"
 else
-    ok "backups.conf exists — not overwritten"
+    ok "backups.conf present (not overwritten)"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 3 — ALL SPACE BINS: PATH ENTRIES + SYMLINKS
+# STEP 3 — PATH + SYMLINKS
+# Strip stale entries first (prevents accumulation on reinstall/move),
+# then loop XSPACE_ALL_BIN_DIRS and write a guard + symlinks for each.
 # ─────────────────────────────────────────────────────────────────────────────
-hr "Space bins → PATH + ~/bin"
+hr "PATH entries + symlinks"
+
+# Strip stale entries for all known space bin dirs before re-adding.
+for _stale_space in _configure/bin animate-space/bin git-space/bin sys-space/bin \
+                    backup-space/bin sconl-space/bin server-space/bin creator-space/bin; do
+    remove_pattern_from_rc "$SHELL_RC" "${_stale_space}:\\\$PATH" "stale ${_stale_space} entry"
+done
 
 for rel_bin in "${XSPACE_ALL_BIN_DIRS[@]}"; do
     abs_bin="$XSPACE_ROOT/$rel_bin"
@@ -198,7 +246,9 @@ for rel_bin in "${XSPACE_ALL_BIN_DIRS[@]}"; do
         continue
     fi
 
-    PATH_LINE="[[ \":$PATH:\" != *\":${abs_bin}:\"* ]] && PATH=\"${abs_bin}:\$PATH\""
+    # Use \$PATH (escaped) so the written guard references $PATH at shell
+    # startup time, not the expanded value at install time.
+    PATH_LINE="[[ \":\$PATH:\" != *\":${abs_bin}:\"* ]] && PATH=\"${abs_bin}:\$PATH\""
     add_line_to_rc "$SHELL_RC" "$PATH_LINE" "xspace: ${rel_bin} on PATH"
 
     chmod +x "$abs_bin"/* 2>/dev/null || true
@@ -207,7 +257,7 @@ for rel_bin in "${XSPACE_ALL_BIN_DIRS[@]}"; do
         [[ -f "$f" ]] || continue
         name="$(basename "$f")"
         ln -sf "$f" "$USER_BIN/$name"
-        (( ++linked ))
+        (( ++linked )) || true
     done
     ok "${rel_bin} — $linked script(s) symlinked"
 done
@@ -218,18 +268,8 @@ add_line_to_rc "$SHELL_RC" "$SAFE_ADD" "xspace: ~/bin on PATH"
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 4 — GITSPACE COMPLETION (move-safe via stable symlink)
 # ─────────────────────────────────────────────────────────────────────────────
-# Design rationale:
-#   Old approach: wrote the absolute repo path into .bashrc directly.
-#   Problem:      moving the repo = stale path = error on every terminal open.
-#   New approach: symlink  actual_path → ~/.local/share/xspace/completion.sh
-#                 RC line: sources $HOME/.local/share/xspace/completion.sh
-#   Benefit:      RC line uses $HOME (stable). After any move, re-run install.sh
-#                 and the symlink is updated — no .bashrc editing ever needed.
-# ─────────────────────────────────────────────────────────────────────────────
 hr "gitspace completion (move-safe symlink)"
 
-# Clean up any old absolute-path style RC entries from v0.5.0 and earlier.
-# Safe to run every time — grep returns non-zero if nothing found.
 remove_pattern_from_rc "$SHELL_RC" \
     "gitspace-completion.sh" \
     "old absolute-path completion line"
@@ -237,7 +277,6 @@ remove_pattern_from_rc "$SHELL_RC" \
 if [[ -f "$ABS_GITSPACE_COMPLETION" ]]; then
     ln -sf "$ABS_GITSPACE_COMPLETION" "$COMP_SYMLINK"
     ok "Symlink: $COMP_SYMLINK → $ABS_GITSPACE_COMPLETION"
-
     add_line_to_rc "$SHELL_RC" "$COMP_LINE" "xspace: gitspace tab completion"
     ok "gitspace completion registered (move-safe)"
 else
@@ -255,6 +294,7 @@ for entry in \
     "git-space:$ABS_GITSPACE" \
     "sys-space:$ABS_SYSSPACE" \
     "backup-space:$ABS_BACKUPSPACE" \
+    "sconl-space:$ABS_SCONLSPACE" \
     "code-space:$XSPACE_ROOT/$CODESPACE_DIR"
 do
     label="${entry%%:*}"; path="${entry##*:}"
@@ -267,7 +307,7 @@ done
 hr "Python + Pillow (animatex-text)"
 
 if ! command -v python3 &>/dev/null; then
-    warn "python3 not found — animatex-text will not work"
+    warn "python3 not found — animatex-text and Equicycle engine will not work"
 else
     ok "$(python3 --version 2>&1)"
     if python3 -c "import PIL" &>/dev/null; then
@@ -284,6 +324,7 @@ else
     fi
 fi
 ok "animatex-svg: stdlib only — no extra deps"
+ok "equicycle.py: stdlib only — no extra deps"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 7 — ENGINE CHECKS
@@ -318,6 +359,118 @@ for d in "$ABS_TEXT_EXPORTS" "$ABS_SVG_EXPORTS" "$ABS_BK_LOGS"; do
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
+# STEP 9 — VM TOOLS + SCONL-SPACE FULL DATA INIT
+# ─────────────────────────────────────────────────────────────────────────────
+hr "VM tools"
+
+command -v virsh &>/dev/null \
+    && ok "virsh available  (serverx / creatorx → VM management)" \
+    || warn "virsh not found — serverx/creatorx will not work  (sudo dnf install libvirt)"
+
+command -v virt-viewer &>/dev/null \
+    && ok "virt-viewer available  (creatorx → Windows VM GUI)" \
+    || warn "virt-viewer not found — creatorx needs it  (sudo dnf install virt-viewer)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 10 — SCONL-SPACE DATA INITIALIZATION
+# ─────────────────────────────────────────────────────────────────────────────
+hr "sconl-space data (flat-file mode)"
+
+# .gitignore for data/ — personal data stays local, never committed
+SCONL_DATA_GI="$ABS_SC_DATA/.gitignore"
+if [[ ! -f "$SCONL_DATA_GI" ]]; then
+    cat > "$SCONL_DATA_GI" <<'GITIGNORE'
+# sconl-space/data — personal data, not committed to the repo.
+# Everything in here is yours: tasks, journal, goals, spaces, ideas.
+*
+!.gitignore
+GITIGNORE
+    ok "Created sconl-space/data/.gitignore"
+else
+    ok "sconl-space/data/.gitignore present"
+fi
+
+# ── Scope flat-file TSV headers ──
+init_tsv "$ABS_SC_DATA_SCOPE/inbox.tsv" \
+    "ID\tTITLE\tBODY\tSTATUS\tSOURCE\tCAPTURED_AT\tEQ_YEAR\tEQ_CYCLE\tEQ_DAY"
+
+init_tsv "$ABS_SC_DATA_SCOPE/tasks.tsv" \
+    "ID\tTITLE\tSTATUS\tPRIORITY\tPROJECT_ID\tCARRY_FWD\tDUE_DATE\tENERGY\tCREATED_AT\tUPDATED_AT"
+
+init_tsv "$ABS_SC_DATA_SCOPE/goals.tsv" \
+    "ID\tTITLE\tKPI\tTARGET\tCURRENT\tLEVEL\tSTATUS\tWEIGHT\tCREATED_AT\tUPDATED_AT"
+
+init_tsv "$ABS_SC_DATA_SCOPE/projects.tsv" \
+    "ID\tGOAL_ID\tTITLE\tSTATUS\tDOD\tCREATED_AT"
+
+init_tsv "$ABS_SC_DATA_SCOPE/cycles.tsv" \
+    "ID\tEQ_YEAR\tCYCLE_NUM\tTHEME\tSTART_DATE\tEND_DATE\tSTATUS\tOBJ1\tOBJ2\tOBJ3"
+
+init_tsv "$ABS_SC_DATA_SCOPE/reflections.tsv" \
+    "DATE\tMOOD\tENERGY\tHAS_CONTENT"
+
+# ── Space flat-file TSV headers ──
+init_tsv "$ABS_SC_DATA_SPACE/spaces.tsv" \
+    "ID\tNAME\tTYPE\tSTATUS\tHEALTH\tDESCRIPTION\tEMOJI\tCREATED_AT\tLAST_REVIEWED"
+
+init_tsv "$ABS_SC_DATA_SPACE/projects.tsv" \
+    "ID\tSPACE_ID\tTITLE\tSTATUS\tCREATED_AT"
+
+init_tsv "$ABS_SC_DATA_SPACE/contacts.tsv" \
+    "ID\tSPACE_ID\tNAME\tROLE\tLAST_CONTACT\tCREATED_AT"
+
+init_tsv "$ABS_SC_DATA_SPACE/kpi_defs.tsv" \
+    "ID\tSPACE_ID\tNAME\tUNIT\tTARGET"
+
+init_tsv "$ABS_SC_DATA_SPACE/kpi_log.tsv" \
+    "ID\tKPI_ID\tSPACE_ID\tNAME\tVALUE\tUNIT\tMEASURED_AT"
+
+init_tsv "$ABS_SC_DATA_SPACE/events.tsv" \
+    "ID\tSPACE_ID\tTYPE\tTITLE\tEVENT_DATE"
+
+# ── Spark flat-file TSV headers ──
+init_tsv "$ABS_SC_DATA_SPARK/ideas.tsv" \
+    "ID\tSTAGE\tTYPE\tBODY\tTITLE\tCREATED_AT\tUPDATED_AT"
+
+init_tsv "$ABS_SC_DATA_SPARK/learning.tsv" \
+    "ID\tTITLE\tTYPE\tSTATUS\tPROGRESS\tAUTHOR\tCREATED_AT\tUPDATED_AT"
+
+init_tsv "$ABS_SC_DATA_SPARK/dia.tsv" \
+    "ID\tNAME\tROLE\tTYPE\tDEPTH\tLAST_CONTACT\tTRAJECTORY\tCREATED_AT"
+
+# ── Shared event bus (flat mode) ──
+init_tsv "$ABS_SC_DATA/events.tsv" \
+    "ID\tSOURCE\tTYPE\tPAYLOAD\tCREATED_AT\tCONSUMED_BY"
+
+# ── Legacy tasks.tsv compatibility (kept for v1.0.0 data migration) ──
+# Only create if it doesn't already exist — preserve any existing v1.0.0 data
+if [[ ! -f "$ABS_SC_DATA/tasks.tsv" ]]; then
+    printf 'ID\tSTATUS\tPRIORITY\tDUE\tCREATED\tTITLE\tTAGS\n' > "$ABS_SC_DATA/tasks.tsv"
+    ok "Initialized legacy tasks.tsv (v1.0.0 compatibility)"
+else
+    ok "Legacy tasks.tsv present"
+fi
+
+# ── Equicycle engine check ──
+EQUICYCLE_PY="$ABS_SCONLSPACE/lib/equicycle.py"
+if [[ -f "$EQUICYCLE_PY" ]]; then
+    ok "equicycle.py engine found"
+    # Quick sanity test
+    if python3 "$EQUICYCLE_PY" --format fields &>/dev/null; then
+        ok "equicycle.py working"
+    else
+        warn "equicycle.py found but failed self-test — check python3 installation"
+    fi
+else
+    warn "equicycle.py missing at $EQUICYCLE_PY — sconlx cycle display won't work"
+fi
+
+# ── sqlite3 check (needed for SQLite mode when Flutter apps arrive) ──
+command -v sqlite3 &>/dev/null \
+    && ok "sqlite3 available (SQLite mode ready when Flutter apps installed)" \
+    || warn "sqlite3 not found — install it for SQLite mode: sudo dnf install sqlite (or apt install sqlite3)"
+
+# ─────────────────────────────────────────────────────────────────────────────
 # DONE
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -329,17 +482,28 @@ echo ""
 echo "  Run 'refreshx' or open a new terminal to activate."
 echo ""
 echo "  Commands available:"
+echo "    sconlx               iSconl dashboard (tasks, journal, goals, spaces, ideas)"
+echo "    sconlx --help        full command reference"
+echo "    sconlx scope         daily loop: inbox, tasks, goals, reflection"
+echo "    sconlx space         portfolio: businesses, projects, hobbies"
+echo "    sconlx spark         inner world: journal, ideas, learning"
+echo "    sconlx journal       open today's journal"
+echo "    sconlx task          quick task management (legacy alias)"
+echo ""
 echo "    animatex --help      animated text assets"
 echo "    commitx --help       git commit helper"
 echo "    backupx --help       backup orchestrator"
-echo "    backupx --init       first-time: pull OneDrive folders to local"
+echo "    serverx --help       server VM manager"
+echo "    creatorx --help      Windows VM manager"
 echo "    updatex --help       system + repo updater"
 echo "    refreshx             reload shell"
 echo ""
-echo "  Adding commands: drop a script into any space's bin/ dir."
-echo "  Scripts in git-space/bin, sys-space/bin, animate-space/bin,"
-echo "  backup-space/bin are available on next terminal open."
+echo "  sconlx data (flat-file mode):"
+echo "    $ABS_SC_DATA"
 echo ""
-echo "  Moved the repo? Just re-run this script — the completion symlink"
-echo "  is updated automatically. No .bashrc editing needed."
+echo "  SQLite mode activates automatically when Flutter iSconl apps are"
+echo "  installed and databases appear at:"
+echo "    $ABS_ISCONL_DATA"
+echo ""
+echo "  Moved the repo? Re-run this script — symlinks update automatically."
 echo ""
