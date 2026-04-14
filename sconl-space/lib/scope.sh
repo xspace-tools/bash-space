@@ -63,13 +63,13 @@ _scope_dashboard() {
   local eq_str; eq_str="$(_eq_today_short)"
   local today; today="$(_db_today)"
 
-  _ui_section "$(_ui_scope "SCOPE")  ·  $eq_str"
+  _ui_section_scope "SCOPE" "$eq_str"
 
   # Identity line
   if _db_identity_exists; then
     _db_identity_load
     printf '  %s  %s\n' \
-      "$(_ui_dim "✦")" \
+      "$(_ui_dim "*")" \
       "$(_ui_italic "${SEASON_THEME:-${SEASON_NAME:-Unnamed Season}}")" >&2
     printf '  %s  %s\n' "$(_ui_dim "  ")" \
       "$(_ui_dim "${CORE_VALUES:-}")" >&2
@@ -83,20 +83,20 @@ _scope_dashboard() {
     local stale_note=""
     [[ "$inbox_stale" -gt 0 ]] && stale_note=" $(_ui_yellow "($inbox_stale stale)")"
     printf '\n  %s  %s  %s%s\n' \
-      "$_UI_BADGE_INBOX" \
+      "Inbox" \
       "$(_ui_bold "INBOX")" \
       "$inbox_count item(s)" \
       "$stale_note" >&2
   else
     printf '\n  %s  %s  %s\n' \
-      "$_UI_BADGE_INBOX" "$(_ui_bold "INBOX")" "$(_ui_dim "empty")" >&2
+      "Inbox" "$(_ui_bold "INBOX")" "$(_ui_dim "empty")" >&2
   fi
 
   # Today's tasks
   local today_count today_done_count
   today_count="$(_tsv_count "$_FLAT_SCOPE_TASKS" '$3=="today"')"
   today_done_count="$(_tsv_count "$_FLAT_SCOPE_TASKS" '$3=="done" && $10==strftime("%Y-%m-%d",systime())')" 2>/dev/null || today_done_count=0
-  printf '\n  %s  %s\n' "$_UI_BADGE_TODAY" "$(_ui_bold "TODAY")" >&2
+  printf '\n  %s  %s\n' "Today" "$(_ui_bold "TODAY")" >&2
   if [[ "$today_count" -gt 0 ]]; then
     _scope_task_list_compact "today" 5
   else
@@ -106,14 +106,14 @@ _scope_dashboard() {
   # Goals
   local goal_count
   goal_count="$(_tsv_count "$_FLAT_SCOPE_GOALS" '$7=="active"')"
-  printf '\n  %s  %s  %s\n' "$_UI_BADGE_GOAL" "$(_ui_bold "GOALS")" \
+  printf '\n  %s  %s  %s\n' "Goals" "$(_ui_bold "GOALS")" \
     "$(_ui_dim "$goal_count active")" >&2
   if [[ "$goal_count" -gt 0 ]]; then
     _scope_goal_list_compact 3
   fi
 
   # Cycle
-  printf '\n  %s  %s\n' "$_UI_BADGE_CYCLE" "$(_ui_bold "CYCLE")" >&2
+  printf '\n  %s  %s\n' "Cycle" "$(_ui_bold "CYCLE")" >&2
   _scope_cycle_compact
 
   # Reflection prompt
@@ -146,11 +146,11 @@ _scope_inbox_list() {
   local count; count="$(_tsv_count "$_FLAT_SCOPE_INBOX" '$4=="new"')"
   local stale; stale="$(_scope_inbox_stale_count)"
 
-  printf '\n  %s  INBOX  (%s items' \
-    "$_UI_BADGE_INBOX" "$count" >&2
-  [[ "$stale" -gt 0 ]] && printf ', %s stale' "$(_ui_yellow "$stale")" >&2
-  printf ')\n' >&2
-  _ui_hr
+  _ui_section_scope "INBOX" "$count item(s)"
+
+  if [[ "$stale" -gt 0 ]]; then
+    _ui_warn "$stale item(s) stale  (>14 days — triage recommended)"
+  fi
 
   if [[ "$count" -eq 0 ]]; then
     printf '  %s\n\n' "$(_ui_dim "Empty. Add something: sconlx scope inbox add \"Your thought\"")" >&2
@@ -215,7 +215,7 @@ _scope_inbox_triage() {
 
   [[ "$count" -eq 0 ]] && { _ui_ok "Inbox empty — nothing to triage." >&2; return 0; }
 
-  printf '\n  %s  TRIAGE  (%s items)\n' "$_UI_BADGE_INBOX" "$count" >&2
+  printf '\n  %s  TRIAGE  (%s items)\n' "Inbox" "$count" >&2
   printf '  %s\n\n' "$(_ui_dim "For each item: [t]ask  [g]oal  [s]omeday  [d]elete  [k]eep  [q]uit")" >&2
 
   while IFS=$'\t' read -r id title body status source captured eq_yr eq_c eq_d; do
@@ -272,7 +272,7 @@ _scope_today_route() {
 
 _scope_today_list() {
   local eq_str; eq_str="$(_eq_today_short)"
-  printf '\n  %s  TODAY  ·  %s\n' "$_UI_BADGE_TODAY" "$eq_str" >&2
+  printf '\n  %s  TODAY  ·  %s\n' "Today" "$eq_str" >&2
   _ui_hr
   _scope_task_list_compact "today" 20
   local deferred_count
@@ -322,7 +322,7 @@ _scope_task_route() {
 _scope_task_list() {
   local filter="${1:-}"
   local eq_str; eq_str="$(_eq_today_short)"
-  printf '\n  TASKS  ·  %s\n' "$eq_str" >&2
+  _ui_section_scope "TASKS" "$eq_str" >&2
   _ui_hr
 
   # Determine which statuses to show
@@ -371,7 +371,7 @@ _scope_task_list_compact() {
   [[ -f "$_FLAT_SCOPE_TASKS" ]] || return 0
   awk -F'\t' -v s="$status" -v lim="$limit" -v warn="$_SCOPE_DEFERRED_WARN" '
     NR>1 && $3==s {
-      badge = (s=="done") ? "✓" : (s=="deferred") ? "↩" : (s=="today") ? "⚡" : "○"
+      badge = (s=="done") ? "+" : (s=="deferred") ? "~" : (s=="today") ? ">" : "○"
       cf = ($6+0 > 0) ? " ×" $6 : ""
       pri = ($4=="high") ? " [high]" : ($4=="low") ? " [low]" : ""
       due = ($7!="-" && $7!="") ? "  due:" $7 : ""
@@ -501,7 +501,7 @@ _scope_goal_route() {
 
 _scope_goal_list() {
   local count; count="$(_tsv_count "$_FLAT_SCOPE_GOALS" '$7=="active"')"
-  printf '\n  %s  GOALS  (%s active)\n' "$_UI_BADGE_GOAL" "$count" >&2
+  printf '\n  %s  GOALS  (%s active)\n' "Goals" "$count" >&2
   _ui_hr
 
   if [[ "$count" -eq 0 ]]; then
@@ -613,7 +613,7 @@ _scope_goal_done() {
   _ui_confirm "Mark goal $id as complete?" || return 0
   _tsv_update_field "$_FLAT_SCOPE_GOALS" "$id" 7 "completed"
   local title; title="$(_tsv_get "$_FLAT_SCOPE_GOALS" "$id" 2)"
-  _ui_cap "🎉 Goal completed: $title"
+  _ui_cap "Goal completed: $title"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -634,11 +634,11 @@ _scope_reflect_guided() {
   local reflection_file="$_FLAT_SCOPE_REFLECTIONS_DIR/${today}.md"
 
   if [[ -f "$reflection_file" ]]; then
-    printf '\n  %s  REFLECTION  already done today.\n' "$(_ui_green "✓")" >&2
+    printf '\n  Reflection already written today.\n' >&2
     _ui_confirm "Write a new/additional reflection anyway?" "n" || return 0
   fi
 
-  printf '\n  %s  DAILY REFLECTION  ·  %s\n' "🌀" "$eq_str" >&2
+  printf '\n  Daily Reflection  ·  %s\n' "$eq_str" >&2
   _ui_hr
   printf '  %s\n\n' "$(_ui_dim "Answer honestly — this is for you, not for show.")" >&2
 
@@ -742,7 +742,7 @@ _scope_cycle_view() {
   local start_date end_date
   IFS=$'\t' read -r start_date end_date <<< "$(_eq_cycle_range "$eq_year" "$eq_cycle")"
 
-  printf '\n  %s  CYCLE %s  —  %s\n' "$_UI_BADGE_CYCLE" "$eq_cycle" "$eq_theme" >&2
+  printf '\n  %s  CYCLE %s  —  %s\n' "Cycle" "$eq_cycle" "$eq_theme" >&2
   _ui_hr
   printf '  %s → %s\n\n' "$start_date" "$end_date" >&2
 
@@ -884,7 +884,7 @@ _scope_identity_route() {
 }
 
 _scope_identity_view() {
-  printf '\n  %s  IDENTITY LAYER\n' "✦" >&2
+  printf '\n  Identity Layer\n' >&2
   _ui_hr
 
   if ! _db_identity_exists; then
@@ -921,56 +921,101 @@ _scope_identity_view() {
 }
 
 _scope_identity_edit() {
-  printf '\n  %s  IDENTITY SETUP\n' "✦" >&2
-  _ui_hr
-  printf '  %s\n\n' "$(_ui_dim "These are your foundation — answer thoughtfully.")" >&2
+  _ui_section "IDENTITY SETUP"
+  _ui_hint "Your foundation layer. Take a few minutes — this anchors everything else."
+  _ui_hint "Type [q] at any prompt to cancel without saving."
+  _ui_blank
 
   _db_identity_load 2>/dev/null || true
 
-  printf '  %s\n' "$(_ui_bold "YOUR NORTH STAR")" >&2
-  printf '  %s\n\n' "$(_ui_dim "Your life purpose in one sentence.")" >&2
-  local north_star; north_star="$(_ui_prompt "North Star" "${NORTH_STAR:-}")"
+  # ── North Star ──
+  _ui_subsection "North Star"
+  _ui_hint "Your life purpose in one sentence. The thing you're ultimately about."
+  local north_star
+  north_star="$(_ui_prompt "North Star" "${NORTH_STAR:-}")" || {
+    _ui_info "Identity setup cancelled."; return 0
+  }
 
-  printf '\n  %s\n' "$(_ui_bold "DECADE VISION")" >&2
-  local decade; decade="$(_ui_prompt "10-year vision" "${DECADE_VISION:-}")"
+  # ── Decade Vision ──
+  _ui_subsection "Decade Vision"
+  _ui_hint "Where are you in 10 years? One or two sentences."
+  local decade
+  decade="$(_ui_prompt "10-year vision" "${DECADE_VISION:-}")" || {
+    _ui_info "Identity setup cancelled."; return 0
+  }
 
-  printf '\n  %s\n' "$(_ui_bold "CORE VALUES")" >&2
-  printf '  %s\n' "$(_ui_dim "Enter 3-5 values separated by |  e.g. Integrity|Mastery|Impact")" >&2
-  local values; values="$(_ui_prompt "Values" "${CORE_VALUES:-}")"
+  # ── Core Values ──
+  _ui_subsection "Core Values"
+  _ui_hint "3–5 values that define how you operate. Separate with |"
+  _ui_hint "Example: Integrity|Mastery|Impact|Curiosity"
+  local values
+  values="$(_ui_prompt "Values" "${CORE_VALUES:-}")" || {
+    _ui_info "Identity setup cancelled."; return 0
+  }
 
-  printf '\n  %s\n' "$(_ui_bold "CURRENT SEASON")" >&2
-  printf '  %s\n\n' "$(_ui_dim "A season is roughly a year — your current life chapter.")" >&2
-  local season_name; season_name="$(_ui_prompt "Season name (e.g. 'Mastery & Creation')" "${SEASON_NAME:-}")"
-  local season_word; season_word="$(_ui_prompt "Season word (e.g. 'Build')" "${SEASON_WORD:-}")"
-  local season_theme; season_theme="$(_ui_prompt "Season theme statement" "${SEASON_THEME:-}")"
-  local season_year; season_year="$(_ui_prompt "Season year" "${SEASON_YEAR:-$(date +%Y)}")"
+  # ── Current Season ──
+  _ui_subsection "Current Season"
+  _ui_hint "A season is your current life chapter — roughly a year."
+  local season_name
+  season_name="$(_ui_prompt "Season name" "${SEASON_NAME:-}" "e.g. 'Mastery & Creation'")" || {
+    _ui_info "Identity setup cancelled."; return 0
+  }
+  local season_word
+  season_word="$(_ui_prompt "Season word  (one word)" "${SEASON_WORD:-}" "e.g. 'Build'")" || {
+    _ui_info "Identity setup cancelled."; return 0
+  }
+  local season_theme
+  season_theme="$(_ui_prompt "Season theme statement" "${SEASON_THEME:-}" "e.g. 'This year is for building deeply'")" || {
+    _ui_info "Identity setup cancelled."; return 0
+  }
+  local season_year
+  season_year="$(_ui_prompt "Season year" "${SEASON_YEAR:-$(date +%Y)}")" || {
+    _ui_info "Identity setup cancelled."; return 0
+  }
 
-  printf '\n  %s\n' "$(_ui_bold "ANNUAL INTENTIONS")" >&2
-  printf '  %s\n' "$(_ui_dim "2-4 big things for this year, separated by |")" >&2
-  local intentions; intentions="$(_ui_prompt "Intentions" "${ANNUAL_INTENTIONS:-}")"
+  # ── Annual Intentions ──
+  _ui_subsection "Annual Intentions"
+  _ui_hint "2–4 big things you intend to do this year. Separate with |"
+  local intentions
+  intentions="$(_ui_prompt "Intentions" "${ANNUAL_INTENTIONS:-}")" || {
+    _ui_info "Identity setup cancelled."; return 0
+  }
 
+  # ── Birthday ──
+  _ui_subsection "Birthday"
+  _ui_hint "Used to show your exact age and countdown to your next birthday."
+  local birthday
+  birthday="$(_ui_prompt "Date of birth  YYYY-MM-DD" "${BIRTHDAY:-}")" || {
+    _ui_info "Identity setup cancelled."; return 0
+  }
+
+  # ── Save ──
   _db_identity_write \
     "$north_star" "$decade" "$values" \
     "$season_name" "$season_word" "$season_theme" \
-    "$season_year" "$intentions"
+    "$season_year" "$intentions" "$birthday"
 
-  printf '\n' >&2
+  _ui_blank
   _ui_cap "Identity saved."
   _scope_identity_view
 }
 
 _scope_identity_north_star() {
   _db_identity_load 2>/dev/null || true
-  printf '\n  %s  NORTH STAR\n\n' "✦" >&2
-  printf '  %s\n\n' "${NORTH_STAR:-Not set}" >&2
+  _ui_section "NORTH STAR"
+  _ui_blank
+  printf '%s  %s\n\n' "$_UI_INDENT" "${NORTH_STAR:-Not set}" >&2
   _ui_confirm "Edit?" "n" && _scope_identity_edit || true
 }
 
 _scope_identity_season() {
   _db_identity_load 2>/dev/null || true
-  printf '\n  %s  CURRENT SEASON\n\n' "✦" >&2
-  printf '  %s  ·  %s\n' "${SEASON_NAME:-Not set}" "${SEASON_WORD:-}" >&2
-  printf '  %s\n\n' "${SEASON_THEME:-}" >&2
+  _ui_section "CURRENT SEASON"
+  _ui_blank
+  _ui_row "Name"  "${SEASON_NAME:-Not set}"
+  _ui_row "Word"  "${SEASON_WORD:-}"
+  _ui_row "Theme" "${SEASON_THEME:-}"
+  _ui_blank
   _ui_confirm "Edit?" "n" && _scope_identity_edit || true
 }
 
@@ -980,7 +1025,7 @@ _scope_identity_season() {
 
 _scope_plan() {
   local eq_str; eq_str="$(_eq_today_short)"
-  printf '\n  📅  WEEKLY PLAN  ·  %s\n' "$eq_str" >&2
+  printf '\n  Weekly Plan  ·  %s\n' "$eq_str" >&2
   _ui_hr
 
   # Show current goals as context

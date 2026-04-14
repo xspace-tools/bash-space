@@ -55,13 +55,13 @@ _spark_route() {
 
 _spark_dashboard() {
   local eq_str; eq_str="$(_eq_today_short)"
-  printf '\n  %s  SPARK  ·  %s\n' "✨" "$eq_str" >&2
+  printf '\n  Spark  ·  %s\n' "$eq_str" >&2
   _ui_hr
 
   # Journal
   local today; today="$(_db_today)"
   local journal_file="$_FLAT_JOURNAL_DIR/${today}.md"
-  printf '\n  %s  %s\n' "$_UI_BADGE_JOURNAL" "$(_ui_bold "JOURNAL")" >&2
+  printf '\n  %s  %s\n' "Journal" "$(_ui_bold "JOURNAL")" >&2
   if [[ -f "$journal_file" ]]; then
     local wc; wc="$(wc -w < "$journal_file" 2>/dev/null || echo 0)"
     printf '  %s  Entry written today (%s words)\n' "$(_ui_green "✓")" "$wc" >&2
@@ -79,7 +79,7 @@ _spark_dashboard() {
   ideas_developing="$(_tsv_count "$_FLAT_SPARK_IDEAS" '$2=="developing"')"
   ideas_refined="$(_tsv_count "$_FLAT_SPARK_IDEAS" '$2=="refined"')"
 
-  printf '\n  %s  %s\n' "$_UI_BADGE_IDEA" "$(_ui_bold "IDEAS")" >&2
+  printf '\n  %s  %s\n' "Ideas" "$(_ui_bold "IDEAS")" >&2
   printf '  Captured: %s  ·  Developing: %s  ·  Refined: %s\n' \
     "$ideas_captured" "$ideas_developing" "$ideas_refined" >&2
 
@@ -91,7 +91,7 @@ _spark_dashboard() {
   # Learning
   local active_learning
   active_learning="$(_tsv_count "$_FLAT_SPARK_LEARNING" '$3=="active"')"
-  printf '\n  %s  %s\n' "$_UI_BADGE_BOOK" "$(_ui_bold "LEARNING")" >&2
+  printf '\n  %s  %s\n' "Learning" "$(_ui_bold "LEARNING")" >&2
   if [[ "$active_learning" -gt 0 ]]; then
     awk -F'\t' 'NR>1 && $3=="active" {
       bar=""
@@ -107,7 +107,7 @@ _spark_dashboard() {
   local dia_total dia_overdue
   dia_total="$(_tsv_count "$_FLAT_SPARK_DIA")"
   dia_overdue="$(_spark_dia_overdue_count)"
-  printf '\n  %s  %s\n' "$_UI_BADGE_DIA" "$(_ui_bold "DIA")" >&2
+  printf '\n  %s  %s\n' "DIA" "$(_ui_bold "DIA")" >&2
   printf '  %s profiles' "$dia_total" >&2
   [[ "$dia_overdue" -gt 0 ]] && printf '  ·  %s overdue' "$(_ui_yellow "$dia_overdue")" >&2
   printf '\n' >&2
@@ -324,7 +324,7 @@ _spark_idea_route() {
 
 _spark_idea_list() {
   local filter="${1:-}"
-  printf '\n  %s  IDEA PIPELINE\n' "$_UI_BADGE_IDEA" >&2
+  printf '\n  %s  IDEA PIPELINE\n' "Ideas" >&2
   _ui_hr
 
   local total; total="$(_tsv_count "$_FLAT_SPARK_IDEAS" '$2!="archived" && $2!="exported"')"
@@ -522,7 +522,7 @@ _spark_learn_route() {
 
 _spark_learn_list() {
   local filter="${1:-}"
-  printf '\n  %s  LEARNING LIBRARY\n' "$_UI_BADGE_BOOK" >&2
+  printf '\n  %s  LEARNING LIBRARY\n' "Learning" >&2
   _ui_hr
 
   local active_count; active_count="$(_tsv_count "$_FLAT_SPARK_LEARNING" '$3=="active"')"
@@ -681,7 +681,7 @@ _spark_dia_route() {
 
 _spark_dia_list() {
   local total; total="$(_tsv_count "$_FLAT_SPARK_DIA")"
-  printf '\n  %s  DIA PROFILES  (%s)\n' "$_UI_BADGE_DIA" "$total" >&2
+  printf '\n  %s  DIA PROFILES  (%s)\n' "DIA" "$total" >&2
   printf '  %s\n' "$(_ui_dim "(Names and contact metadata only — full profiles in Spark app)")" >&2
   _ui_hr
 

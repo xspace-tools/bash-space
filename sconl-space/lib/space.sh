@@ -20,11 +20,11 @@ _SPACE_REVIEW_OVERDUE_DAYS=14    # spaces not reviewed in this many days → fla
 
 # Space type emojis
 declare -A _SPACE_TYPE_EMOJI=(
-  ["business"]="🏢"
-  ["platform"]="🌐"
-  ["project"]="🚀"
-  ["hobby"]="🎯"
-  ["relationship"]="🤝"
+  ["business"]="[b]"
+  ["platform"]="[p]"
+  ["project"]="[j]"
+  ["hobby"]="[h]"
+  ["relationship"]="[r]"
 )
 
 # Lifecycle statuses in display order
@@ -60,7 +60,7 @@ _space_route() {
 _space_dashboard() {
   local eq_str; eq_str="$(_eq_today_short)"
 
-  printf '\n  %s  SPACE PORTFOLIO  ·  %s\n' "$_UI_BADGE_SPACE" "$eq_str" >&2
+  printf '\n  %s  SPACE PORTFOLIO  ·  %s\n' "Portfolio" "$eq_str" >&2
   _ui_hr
 
   local total; total="$(_tsv_count "$_FLAT_SPACE_SPACES" '$3!="archived"')"
@@ -98,7 +98,7 @@ _space_list_by_lifecycle() {
   awk -F'\t' -v lc="$lifecycle" '
     NR>1 && $4==lc {
       health = ($5+0 > 0) ? $5 : "-"
-      emoji = length($7) > 0 ? $7 : "•"
+      emoji = length($7) > 0 ? $7 : " "
       printf "  %s  %-22s  %-12s  %s/10  %s\n",
         emoji, substr($2,1,22), $3, health, $9
     }' "$_FLAT_SPACE_SPACES" >&2 || true
@@ -106,7 +106,7 @@ _space_list_by_lifecycle() {
 
 _space_list() {
   local filter="$1"
-  printf '\n  SPACE LIST\n' >&2
+  _ui_section_space "SPACE LIST" >&2
   _ui_hr
   if [[ -f "$_FLAT_SPACE_SPACES" ]]; then
     awk -F'\t' -v f="$filter" '
@@ -195,7 +195,7 @@ _space_add() {
 
   local desc; desc="$(_ui_prompt "One-line description (optional)" "")"
   local health; health="$(_ui_prompt "Initial health score (1-10)" "5")"
-  local emoji; emoji="${_SPACE_TYPE_EMOJI[$type]:-•}"
+  local emoji; emoji="${_SPACE_TYPE_EMOJI[$type]:-[?]}"
 
   local id; id="$(_db_next_id "SP" "$_FLAT_SPACE_SPACES")"
   local now; now="$(_db_today)"
@@ -572,7 +572,7 @@ _space_event_list() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 _space_health() {
-  printf '\n  PORTFOLIO HEALTH\n' >&2
+  _ui_section_space "PORTFOLIO HEALTH" >&2
   _ui_hr
 
   local avg; avg="$(_space_avg_health)"

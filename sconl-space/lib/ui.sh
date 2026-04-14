@@ -1,16 +1,23 @@
 # sconl-space/lib/ui.sh
 # Terminal rendering helpers for sconlx.
-# All display output goes to stderr — only return values go to stdout.
-# This matters for any function called inside $() subshells.
+# Design: no emojis, clear visual hierarchy, system color themes.
+# All display output → stderr. Only return values → stdout.
+#
+# Color themes (pick these up everywhere):
+#   Scope  → cyan    (36m)   the daily rhythm
+#   Space  → green   (32m)   the domain portfolio
+#   Spark  → magenta (35m)   the inner world
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v1.0.0 — Initial. ANSI colors, box drawing (╔╠╚), status badges,
-#             progress bars, interactive prompts, table alignment helpers.
+#   v2.0.0 — Complete redesign. No emojis, clean text hierarchy, thin-line
+#             boxes, system color theming, _ui_action_menu with [q] quit,
+#             _ui_prompt with quit detection via exit code, progress bars,
+#             row/label display helpers.
+#   v1.0.0 — Initial. ANSI, box drawing, emoji badges, prompts.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Double-source guard — safe to source multiple times from different libs
 [[ -n "${_UI_LOADED:-}" ]] && return 0
 _UI_LOADED=1
 
@@ -18,278 +25,323 @@ _UI_LOADED=1
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ── Colors & display ──
-_UI_COLOR="${SCONLX_COLOR:-1}"       # set SCONLX_COLOR=0 to disable all ANSI
-_UI_BOX_WIDTH=62                      # total box width including borders
+_UI_COLOR="${SCONLX_COLOR:-1}"
+_UI_WIDTH=60
+_UI_INDENT="  "
 
-# ── Status badges ──
-_UI_BADGE_DONE="✓"
-_UI_BADGE_TODO="○"
-_UI_BADGE_TODAY="⚡"
-_UI_BADGE_DEFERRED="↩"
-_UI_BADGE_BLOCKED="⊘"
-_UI_BADGE_WARN="⚠"
-_UI_BADGE_ACTIVE="●"
-_UI_BADGE_ARCHIVED="·"
-_UI_BADGE_IDEA="💡"
-_UI_BADGE_BOOK="📚"
-_UI_BADGE_JOURNAL="📖"
-_UI_BADGE_INBOX="📥"
-_UI_BADGE_GOAL="🎯"
-_UI_BADGE_CYCLE="🌀"
-_UI_BADGE_SPACE="🗺"
-_UI_BADGE_DIA="🔍"
+# Text markers — no emojis
+_UI_MARK_OK="✓"
+_UI_MARK_WARN="!"
+_UI_MARK_ERR="✗"
+_UI_MARK_INFO="→"
+_UI_MARK_DONE="[x]"
+_UI_MARK_TODO="[ ]"
+_UI_MARK_TODAY="[>]"
+_UI_MARK_DEFERRED="[~]"
+_UI_MARK_BLOCKED="[!]"
+_UI_MARK_ACTIVE="[*]"
+_UI_MARK_BULLET=" · "
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ANSI HELPERS
-# Output to stderr always — display, never data.
+# ANSI COLOR HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 _ui_has_color() { [[ "$_UI_COLOR" == "1" ]] && [[ -t 2 ]]; }
 
-_ui_bold()    { _ui_has_color && printf '\033[1m%s\033[0m' "$*" || printf '%s' "$*"; }
-_ui_dim()     { _ui_has_color && printf '\033[2m%s\033[0m' "$*" || printf '%s' "$*"; }
-_ui_italic()  { _ui_has_color && printf '\033[3m%s\033[0m' "$*" || printf '%s' "$*"; }
-_ui_under()   { _ui_has_color && printf '\033[4m%s\033[0m' "$*" || printf '%s' "$*"; }
+_ui_bold()    { _ui_has_color && printf '\033[1m%s\033[0m' "$*"  || printf '%s' "$*"; }
+_ui_dim()     { _ui_has_color && printf '\033[2m%s\033[0m' "$*"  || printf '%s' "$*"; }
+_ui_italic()  { _ui_has_color && printf '\033[3m%s\033[0m' "$*"  || printf '%s' "$*"; }
+_ui_under()   { _ui_has_color && printf '\033[4m%s\033[0m' "$*"  || printf '%s' "$*"; }
 
-# Named colors — used for system theming
-_ui_cyan()    { _ui_has_color && printf '\033[36m%s\033[0m' "$*"   || printf '%s' "$*"; }
-_ui_green()   { _ui_has_color && printf '\033[32m%s\033[0m' "$*"   || printf '%s' "$*"; }
-_ui_magenta() { _ui_has_color && printf '\033[35m%s\033[0m' "$*"   || printf '%s' "$*"; }
-_ui_yellow()  { _ui_has_color && printf '\033[33m%s\033[0m' "$*"   || printf '%s' "$*"; }
-_ui_red()     { _ui_has_color && printf '\033[31m%s\033[0m' "$*"   || printf '%s' "$*"; }
-_ui_blue()    { _ui_has_color && printf '\033[34m%s\033[0m' "$*"   || printf '%s' "$*"; }
+# System identity colors — always use these, not raw colors, for system names
+_ui_scope()   { _ui_has_color && printf '\033[36m%s\033[0m' "$*" || printf '%s' "$*"; }  # cyan
+_ui_space()   { _ui_has_color && printf '\033[32m%s\033[0m' "$*" || printf '%s' "$*"; }  # green
+_ui_spark()   { _ui_has_color && printf '\033[35m%s\033[0m' "$*" || printf '%s' "$*"; }  # magenta
 
-# System-color aliases — each system has a color identity
-_ui_scope()   { _ui_has_color && printf '\033[36m%s\033[0m' "$*"   || printf '%s' "$*"; }   # cyan
-_ui_space()   { _ui_has_color && printf '\033[32m%s\033[0m' "$*"   || printf '%s' "$*"; }   # green
-_ui_spark()   { _ui_has_color && printf '\033[35m%s\033[0m' "$*"   || printf '%s' "$*"; }   # magenta
+# Utility colors
+_ui_green()   { _ui_has_color && printf '\033[32m%s\033[0m' "$*" || printf '%s' "$*"; }
+_ui_yellow()  { _ui_has_color && printf '\033[33m%s\033[0m' "$*" || printf '%s' "$*"; }
+_ui_red()     { _ui_has_color && printf '\033[31m%s\033[0m' "$*" || printf '%s' "$*"; }
+_ui_cyan()    { _ui_has_color && printf '\033[36m%s\033[0m' "$*" || printf '%s' "$*"; }
+_ui_magenta() { _ui_has_color && printf '\033[35m%s\033[0m' "$*" || printf '%s' "$*"; }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STATUS LINE HELPERS (all to stderr)
+# STATUS LINES (all → stderr)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_ui_ok()    { printf '  %s  %s\n' "$(_ui_green "✓")" "$*" >&2; }
-_ui_warn()  { printf '  %s  %s\n' "$(_ui_yellow "⚠")" "$*" >&2; }
-_ui_err()   { printf '  %s  %s\n' "$(_ui_red "✗")" "$*" >&2; }
-_ui_info()  { printf '  %s  %s\n' "$(_ui_blue "→")" "$*" >&2; }
-_ui_cap()   { printf '  %s  %s\n' "$(_ui_green "✓")" "$(_ui_bold "$*")" >&2; }
+_ui_ok()   { printf '%s%s  %s\n' "$_UI_INDENT" "$(_ui_green  "$_UI_MARK_OK")"   "$*"              >&2; }
+_ui_warn() { printf '%s%s  %s\n' "$_UI_INDENT" "$(_ui_yellow "$_UI_MARK_WARN")" "$(_ui_yellow "$*")" >&2; }
+_ui_err()  { printf '%s%s  %s\n' "$_UI_INDENT" "$(_ui_red    "$_UI_MARK_ERR")"  "$(_ui_red "$*")"  >&2; }
+_ui_info() { printf '%s%s  %s\n' "$_UI_INDENT" "$(_ui_dim    "$_UI_MARK_INFO")" "$*"              >&2; }
+_ui_cap()  { printf '%s%s  %s\n' "$_UI_INDENT" "$(_ui_green  "$_UI_MARK_OK")"   "$(_ui_bold "$*")" >&2; }
+_ui_hint() { printf '%s    %s\n' "$_UI_INDENT" "$(_ui_dim "$*")"                                  >&2; }
+_ui_blank() { printf '\n' >&2; }
 
-# Simple divider line
+# ─────────────────────────────────────────────────────────────────────────────
+# HORIZONTAL RULES
+# ─────────────────────────────────────────────────────────────────────────────
+
 _ui_hr() {
-  printf '  %s\n' "$(printf '─%.0s' {1..58})" >&2
+  local w="${1:-$_UI_WIDTH}"
+  printf '%s%s\n' "$_UI_INDENT" "$(printf '─%.0s' $(seq 1 "$w"))" >&2
 }
 
-# Section header — used inside subsystem views
-_ui_section() {
-  local title="$1"
-  printf '\n  %s\n' "$(_ui_bold "$title")" >&2
-  printf '  %s\n' "$(printf '─%.0s' {1..${#title}})" >&2
+_ui_divider() {
+  local w="${1:-38}"
+  printf '%s  %s\n' "$_UI_INDENT" "$(_ui_dim "$(printf '╌%.0s' $(seq 1 "$w"))")" >&2
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BOX DRAWING — used for the main dashboard
-# Box is _UI_BOX_WIDTH chars wide, with ║ borders.
+# SECTION HEADERS
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Top-level system section: colored bold name + horizontal rule
+_ui_section_scope() { _ui_section_colored "_ui_scope"   "$@"; }
+_ui_section_space() { _ui_section_colored "_ui_space"   "$@"; }
+_ui_section_spark() { _ui_section_colored "_ui_spark"   "$@"; }
+
+_ui_section_colored() {
+  local cfn="$1" title="$2" sub="${3:-}"
+  _ui_blank
+  local t; t="$("$cfn" "$(_ui_bold "$title")")"
+  printf '%s%s' "$_UI_INDENT" "$t" >&2
+  [[ -n "$sub" ]] && printf '  %s' "$(_ui_dim "$sub")" >&2
+  printf '\n' >&2
+  _ui_hr
+}
+
+# Plain section (no system color)
+_ui_section() {
+  local title="$1" sub="${2:-}"
+  _ui_blank
+  printf '%s%s' "$_UI_INDENT" "$(_ui_bold "$title")" >&2
+  [[ -n "$sub" ]] && printf '  %s' "$(_ui_dim "$sub")" >&2
+  printf '\n' >&2
+  _ui_hr
+}
+
+# Sub-section within a section
+_ui_subsection() {
+  printf '\n%s  %s\n' "$_UI_INDENT" "$(_ui_bold "$1")" >&2
+}
+
+# Label:value row — aligned label column
+_ui_row() {
+  local label="$1" value="$2" cfn="${3:-}"
+  local pad=16
+  local display_val="$value"
+  [[ -n "$cfn" ]] && display_val="$("$cfn" "$value")"
+  printf '%s  %-*s  %s\n' "$_UI_INDENT" "$pad" "$(_ui_dim "$label")" "$display_val" >&2
+}
+
+# Indented bullet item
+_ui_item() {
+  local marker="${1:-·}" text="$2" detail="${3:-}"
+  printf '%s  %s  %s' "$_UI_INDENT" "$marker" "$text" >&2
+  [[ -n "$detail" ]] && printf '  %s' "$(_ui_dim "$detail")" >&2
+  printf '\n' >&2
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# THIN-LINE BOX (dashboard header)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _ui_box_top() {
-  local fill; fill="$(printf '═%.0s' $(seq 1 $(( _UI_BOX_WIDTH - 2 ))))"
-  printf '  ╔%s╗\n' "$fill" >&2
-}
-
-_ui_box_mid() {
-  local fill; fill="$(printf '═%.0s' $(seq 1 $(( _UI_BOX_WIDTH - 2 ))))"
-  printf '  ╠%s╣\n' "$fill" >&2
+  local w="${1:-$_UI_WIDTH}"
+  printf '%s┌%s┐\n' "$_UI_INDENT" "$(printf '─%.0s' $(seq 1 $(( w - 2 ))))" >&2
 }
 
 _ui_box_bot() {
-  local fill; fill="$(printf '═%.0s' $(seq 1 $(( _UI_BOX_WIDTH - 2 ))))"
-  printf '  ╚%s╝\n' "$fill" >&2
+  local w="${1:-$_UI_WIDTH}"
+  printf '%s└%s┘\n' "$_UI_INDENT" "$(printf '─%.0s' $(seq 1 $(( w - 2 ))))" >&2
 }
 
-# Print a line inside the box. Content is padded to fit between ║ borders.
-# Usage: _ui_box_line "content" [indent_spaces]
+_ui_box_sep() {
+  local w="${1:-$_UI_WIDTH}"
+  printf '%s├%s┤\n' "$_UI_INDENT" "$(printf '─%.0s' $(seq 1 $(( w - 2 ))))" >&2
+}
+
+# Print a padded line inside the box
 _ui_box_line() {
-  local content="${1:-}" indent="${2:-1}"
-  local prefix; prefix="$(printf ' %.0s' $(seq 1 "$indent"))"
-  # Strip ANSI escapes to calculate visible length
+  local content="${1:-}" lpad="${2:-2}"
+  local w="$_UI_WIDTH"
   local visible; visible="$(printf '%s' "$content" | sed 's/\x1b\[[0-9;]*m//g')"
-  local inner_width=$(( _UI_BOX_WIDTH - 2 ))
-  local pad=$(( inner_width - ${#prefix} - ${#visible} - 1 ))
-  [[ $pad -lt 0 ]] && pad=0
-  local spaces; spaces="$(printf ' %.0s' $(seq 1 "$pad"))"
-  printf '  ║%s%s%s ║\n' "$prefix" "$content" "$spaces" >&2
-}
-
-# Empty box line — blank row inside the box
-_ui_box_empty() {
-  local inner_width=$(( _UI_BOX_WIDTH - 2 ))
-  local spaces; spaces="$(printf ' %.0s' $(seq 1 "$inner_width"))"
-  printf '  ║%s║\n' "$spaces" >&2
+  local inner=$(( w - 2 ))
+  local used=$(( lpad + ${#visible} + 1 ))
+  local rpad=$(( inner - used ))
+  [[ $rpad -lt 0 ]] && rpad=0
+  local pfx spc
+  pfx="$(printf ' %.0s' $(seq 1 "$lpad"))"
+  spc="$(printf ' %.0s' $(seq 1 "$rpad"))"
+  printf '%s│%s%s%s │\n' "$_UI_INDENT" "$pfx" "$content" "$spc" >&2
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PROGRESS BAR (text only, for terminal)
+# PROGRESS BAR
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Returns a filled progress bar string, e.g. "████░░░░░░ 40%"
-# Usage: _ui_progress_bar current total [width]
-_ui_progress_bar() {
-  local current="$1" total="$2" width="${3:-16}"
-  local filled=0 pct=0
-  if [[ $total -gt 0 ]]; then
-    filled=$(( current * width / total ))
-    pct=$(( current * 100 / total ))
-  fi
-  local bar=""
-  local i
-  for (( i=0; i<width; i++ )); do
-    if [[ $i -lt $filled ]]; then
-      bar="${bar}█"
-    else
-      bar="${bar}░"
-    fi
+# Returns bar string: [████░░░░░░░░░░░░░░░░]
+_ui_bar() {
+  local cur="$1" tot="$2" w="${3:-20}"
+  local filled=0
+  [[ $tot -gt 0 ]] && filled=$(( cur * w / tot ))
+  local bar="" i
+  for (( i=0; i<w; i++ )); do
+    [[ $i -lt $filled ]] && bar="${bar}█" || bar="${bar}░"
   done
-  printf '%s %d%%' "$bar" "$pct"
+  printf '[%s]' "$bar"
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# STATUS BADGE
-# ─────────────────────────────────────────────────────────────────────────────
-
-_ui_status_badge() {
-  case "${1:-}" in
-    done|complete|synthesised)   printf '%s' "$(_ui_green   "$_UI_BADGE_DONE")" ;;
-    today|active|doing)          printf '%s' "$(_ui_cyan    "$_UI_BADGE_TODAY")" ;;
-    deferred)                    printf '%s' "$(_ui_yellow  "$_UI_BADGE_DEFERRED")" ;;
-    blocked)                     printf '%s' "$(_ui_red     "$_UI_BADGE_BLOCKED")" ;;
-    archived)                    printf '%s' "$(_ui_dim     "$_UI_BADGE_ARCHIVED")" ;;
-    *)                           printf '%s' "$_UI_BADGE_TODO" ;;
-  esac
-}
-
-# Compact health indicator: ●●●●●●●○○○ (for portfolio view)
+# Health dot line: ●●●●●●●○○○
 _ui_health_dots() {
-  local score="${1:-0}" max="${2:-10}" width="${3:-10}"
-  # Strip any decimal part — bash arithmetic can't handle floats
-  local score_int; score_int="${score%%.*}"
-  score_int="${score_int:-0}"
-  local filled=$(( score_int * width / max ))
-  local dots="" i
-  for (( i=0; i<width; i++ )); do
-    if [[ $i -lt $filled ]]; then
-      dots="${dots}$(_ui_green "●")"
-    else
-      dots="${dots}$(_ui_dim "○")"
-    fi
+  local score="${1:-0}" max="${2:-10}" w="${3:-10}"
+  local si="${score%%.*}"
+  si="${si:-0}"
+  local filled=$(( si * w / max ))
+  local out="" i
+  for (( i=0; i<w; i++ )); do
+    if [[ $i -lt $filled ]]; then out="${out}$(_ui_green "●")"
+    else                          out="${out}$(_ui_dim   "○")"; fi
   done
-  printf '%s' "$dots"
+  printf '%s' "$out"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # INTERACTIVE PROMPTS
-# These print prompts to stderr and return the user's input via stdout.
+# Typing 'q' or 'Q' at any prompt returns exit code 1 (quit signal).
+# Callers must check: value=$(_ui_prompt ...) || { _ui_info "Cancelled."; return 0; }
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Simple text prompt. Returns user input (or default) via stdout.
-# Usage: result="$(_ui_prompt "Question" "default")"
+_ui_is_quit() { [[ "${1,,}" == "q" || "${1,,}" == "quit" ]]; }
+
+# Text prompt — returns exit 1 if user types q
 _ui_prompt() {
-  local label="$1" default="${2:-}" required="${3:-}"
-  local display_default=""
-  [[ -n "$default" ]] && display_default=" $(_ui_dim "[${default}]")"
-  printf '  %s%s: ' "$label" "$display_default" >&2
-  local result
-  IFS= read -r result
-  # Use default if user just hit Enter
-  [[ -z "$result" && -n "$default" ]] && result="$default"
-  printf '%s' "$result"
+  local label="$1" default="${2:-}" hint="${3:-}"
+  local dsp=""
+  [[ -n "$default" ]] && dsp=" $(_ui_dim "[$default]")"
+  [[ -z "$hint" ]] && hint="[q] cancel"
+  printf '\n%s  %s%s  %s\n%s  > ' \
+    "$_UI_INDENT" "$label" "$dsp" "$(_ui_dim "$hint")" "$_UI_INDENT" >&2
+  local r
+  IFS= read -r r
+  [[ -z "$r" && -n "$default" ]] && r="$default"
+  _ui_is_quit "$r" && return 1
+  printf '%s' "$r"
 }
 
-# Yes/no prompt. Returns 0 for yes, 1 for no.
-# Usage: _ui_confirm "Are you sure?" && do_thing
+# Compact single-line prompt
+_ui_prompt_inline() {
+  local label="$1" default="${2:-}"
+  local dsp=""
+  [[ -n "$default" ]] && dsp=" $(_ui_dim "[$default]")"
+  printf '%s  %s%s: ' "$_UI_INDENT" "$label" "$dsp" >&2
+  local r
+  IFS= read -r r
+  [[ -z "$r" && -n "$default" ]] && r="$default"
+  _ui_is_quit "$r" && return 1
+  printf '%s' "$r"
+}
+
+# Yes/No confirm — returns 0 for yes, 1 for no or quit
 _ui_confirm() {
-  local label="${1:-Are you sure?}" default="${2:-n}"
+  local label="${1:-Continue?}" default="${2:-n}"
   local opts="[y/N]"
   [[ "$default" == "y" ]] && opts="[Y/n]"
-  printf '  %s %s: ' "$label" "$(_ui_dim "$opts")" >&2
-  local answer
-  IFS= read -r answer
-  [[ -z "$answer" ]] && answer="$default"
-  [[ "${answer,,}" == "y" ]]
+  printf '%s  %s %s %s: ' \
+    "$_UI_INDENT" "$label" "$(_ui_dim "$opts")" "$(_ui_dim "[q]cancel")" >&2
+  local a
+  IFS= read -r a
+  [[ -z "$a" ]] && a="$default"
+  _ui_is_quit "$a" && return 1
+  [[ "${a,,}" == "y" ]]
 }
 
-# Multi-choice menu. Prints numbered options; returns chosen value via stdout.
-# Usage: result="$(_ui_menu "Choose type" "business" "platform" "project")"
-_ui_menu() {
-  local prompt="$1"; shift
-  local options=("$@")
-  printf '\n  %s\n' "$(_ui_bold "$prompt")" >&2
+# Numbered action menu — prints options, reads choice, returns chosen value.
+# Always appends [q] Quit as the last option.
+# Returns exit 1 if user quits.
+_ui_action_menu() {
+  local title="$1"; shift
+  # Args: "Display text:return_key" pairs
+  local items=("$@")
+  _ui_blank
+  printf '%s%s\n' "$_UI_INDENT" "$(_ui_bold "$title")" >&2
+  _ui_blank
   local i
-  for (( i=0; i<${#options[@]}; i++ )); do
-    printf '  %s  %s\n' "$(_ui_dim "[$((i+1))]")" "${options[$i]}" >&2
+  for (( i=0; i<${#items[@]}; i++ )); do
+    local display="${items[$i]%%:*}"
+    printf '%s  [%d]  %s\n' "$_UI_INDENT" "$(( i+1 ))" "$display" >&2
   done
-  printf '\n  Choice: ' >&2
-  local choice
-  IFS= read -r choice
-  # Validate
-  if [[ "$choice" =~ ^[0-9]+$ ]] && \
-     [[ "$choice" -ge 1 ]] && \
-     [[ "$choice" -le "${#options[@]}" ]]; then
-    printf '%s' "${options[$(( choice - 1 ))]}"
+  printf '%s  [q]  Quit\n' "$_UI_INDENT" >&2
+  _ui_blank
+  printf '%s  > ' "$_UI_INDENT" >&2
+  local c
+  IFS= read -r c
+  _ui_is_quit "$c" && return 1
+  if [[ "$c" =~ ^[0-9]+$ ]] && [[ "$c" -ge 1 ]] && [[ "$c" -le "${#items[@]}" ]]; then
+    printf '%s' "${items[$(( c-1 ))]##*:}"
   else
-    printf '%s' "${options[0]}"
+    return 1
   fi
 }
 
-# Press Enter to continue
+# Simple numbered list picker (no key suffixes — returns display text)
+_ui_menu_choice() {
+  local title="$1"; shift
+  local opts=("$@")
+  _ui_blank
+  printf '%s%s\n' "$_UI_INDENT" "$(_ui_bold "$title")" >&2
+  _ui_blank
+  local i
+  for (( i=0; i<${#opts[@]}; i++ )); do
+    printf '%s  [%d]  %s\n' "$_UI_INDENT" "$(( i+1 ))" "${opts[$i]}" >&2
+  done
+  printf '%s  [q]  Cancel\n' "$_UI_INDENT" >&2
+  _ui_blank
+  printf '%s  > ' "$_UI_INDENT" >&2
+  local c
+  IFS= read -r c
+  _ui_is_quit "$c" && return 1
+  if [[ "$c" =~ ^[0-9]+$ ]] && [[ "$c" -ge 1 ]] && [[ "$c" -le "${#opts[@]}" ]]; then
+    printf '%s' "${opts[$(( c-1 ))]}"
+  else
+    return 1
+  fi
+}
+
 _ui_pause() {
-  local msg="${1:-Press Enter to continue}"
-  printf '\n  %s ' "$(_ui_dim "$msg")" >&2
-  IFS= read -r _
+  printf '\n%s  %s ' "$_UI_INDENT" "$(_ui_dim "Press Enter to continue  [q to quit]")" >&2
+  local k
+  IFS= read -r k
+  _ui_is_quit "$k" && return 1
+  return 0
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SPACING & LAYOUT
+# STRING HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Truncate a string to max width, adding "…" if cut
 _ui_truncate() {
-  local str="$1" max="${2:-40}"
-  if [[ ${#str} -gt $max ]]; then
-    printf '%s…' "${str:0:$(( max - 1 ))}"
-  else
-    printf '%s' "$str"
-  fi
+  local s="$1" max="${2:-40}"
+  [[ ${#s} -gt $max ]] && printf '%s…' "${s:0:$(( max-1 ))}" || printf '%s' "$s"
 }
 
-# Pad a string to exactly N chars (space-padded on right)
-_ui_pad() {
-  local str="$1" width="$2"
-  printf '%-*s' "$width" "$str"
-}
+_ui_pad() { printf '%-*s' "$2" "$1"; }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DAYS AGO HELPER
-# ─────────────────────────────────────────────────────────────────────────────
+_ui_strip_ansi() { printf '%s' "$*" | sed 's/\x1b\[[0-9;]*m//g'; }
 
-# Returns a human-readable time-ago string from a YYYY-MM-DD date
 _ui_days_ago() {
-  local target_date="$1"
-  [[ -z "$target_date" || "$target_date" == "-" ]] && printf 'never' && return 0
-  local today; today="$(date +%Y-%m-%d)"
-  # Use python3 for reliable cross-platform date diff
+  local t="${1:-}"
+  [[ -z "$t" || "$t" == "-" ]] && printf 'never' && return 0
   python3 -c "
 from datetime import date
 try:
-    d = date.fromisoformat('${target_date}')
-    t = date.fromisoformat('${today}')
-    diff = (t - d).days
-    if diff == 0:    print('today')
-    elif diff == 1:  print('yesterday')
-    elif diff < 7:   print(f'{diff}d ago')
-    elif diff < 30:  print(f'{diff//7}w ago')
-    elif diff < 365: print(f'{diff//30}mo ago')
-    else:            print(f'{diff//365}y ago')
-except: print('${target_date}')
-" 2>/dev/null || printf '%s' "$target_date"
+    d=date.fromisoformat('${t}'); n=(date.today()-d).days
+    if n==0:   print('today')
+    elif n==1: print('yesterday')
+    elif n<7:  print(f'{n}d ago')
+    elif n<30: print(f'{n//7}w ago')
+    elif n<365:print(f'{n//30}mo ago')
+    else:      print(f'{n//365}y ago')
+except: print('${t}')
+" 2>/dev/null || printf '%s' "$t"
 }

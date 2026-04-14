@@ -51,7 +51,7 @@ if [[ -f "$_XSPACE_CONF" ]]; then
 fi
 
 # Source all lib files in dependency order
-for _lib in ui.sh db.sh events.sh scope.sh space.sh spark.sh cross.sh; do
+for _lib in ui.sh db.sh events.sh scope.sh space.sh spark.sh cross.sh ai.sh; do
   _lib_path="$_SCONLSPACE_LIB_DIR/$_lib"
   if [[ -f "$_lib_path" ]]; then
     source "$_lib_path"
