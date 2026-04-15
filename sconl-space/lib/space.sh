@@ -93,7 +93,7 @@ _space_dashboard() {
 }
 
 _space_list_by_lifecycle() {
-  local lifecycle="$1"
+  local lifecycle="${$1:-}"
   [[ -f "$_FLAT_SPACE_SPACES" ]] || return 0
   awk -F'\t' -v lc="$lifecycle" '
     NR>1 && $4==lc {
@@ -105,7 +105,7 @@ _space_list_by_lifecycle() {
 }
 
 _space_list() {
-  local filter="$1"
+  local filter="${$1:-}"
   _ui_section_space "SPACE LIST" >&2
   _ui_hr
   if [[ -f "$_FLAT_SPACE_SPACES" ]]; then
@@ -123,7 +123,7 @@ _space_list() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 _space_show() {
-  local query="$1"
+  local query="${$1:-}"
   [[ -z "$query" ]] && { _ui_err "Usage: sconlx space show <name|id>" >&2; return 1; }
 
   # Match by ID or name (case-insensitive partial match)
@@ -187,7 +187,7 @@ _space_add() {
   _ui_hr
   printf '  %s\n\n' "$(_ui_dim "A Space is any domain of your life: a business, project, hobby, platform, or relationship.")" >&2
 
-  local name; name="$(_ui_prompt "Name")"
+  local name; name="$(_ui_prompt "Name")" || { _ui_info "Cancelled." >&2; return 0; }
   [[ -z "$name" ]] && { _ui_warn "No name given." >&2; return 0; }
 
   local type
@@ -217,7 +217,7 @@ _space_add() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 _space_review() {
-  local query="$1"
+  local query="${$1:-}"
   if [[ "$query" == "--all" ]]; then
     _space_review_all; return 0
   fi
@@ -291,7 +291,7 @@ _space_project_route() {
 }
 
 _space_project_list() {
-  local query="$1"
+  local query="${$1:-}"
   printf '\n  SPACE PROJECTS\n' >&2
   _ui_hr
   if [[ -n "$query" ]]; then
@@ -307,7 +307,7 @@ _space_project_list() {
 }
 
 _space_project_add() {
-  local query="$1"
+  local query="${$1:-}"
   [[ -z "$query" ]] && { _ui_err "Usage: sconlx space project add <space-name|id>" >&2; return 1; }
   local space_id; space_id="$(_space_resolve_id "$query")"
   [[ -z "$space_id" ]] && { _ui_err "Space not found: $query" >&2; return 1; }
@@ -335,7 +335,7 @@ _space_task_route() {
 }
 
 _space_task_add() {
-  local project_id="$1"
+  local project_id="${$1:-}"
   [[ -z "$project_id" ]] && { _ui_err "Usage: sconlx space task add <project-id>" >&2; return 1; }
 
   local title; title="$(_ui_prompt "Task title")"
@@ -360,7 +360,7 @@ _space_task_add() {
 }
 
 _space_task_list() {
-  local project_id="$1"
+  local project_id="${$1:-}"
   [[ -z "$project_id" ]] && { _ui_err "Usage: sconlx space task list <project-id>" >&2; return 1; }
   printf '\n  Tasks in project %s\n' "$project_id" >&2
   _ui_hr
@@ -384,7 +384,7 @@ _space_kpi_route() {
 }
 
 _space_kpi_add() {
-  local space_id="$1"
+  local space_id="${$1:-}"
   [[ -z "$space_id" ]] && space_id="$(_space_pick_space)"
   [[ -z "$space_id" ]] && return 0
 
@@ -401,7 +401,7 @@ _space_kpi_add() {
 }
 
 _space_kpi_log() {
-  local query="$1" kpi_name="$2" value="$3"
+  local query="${$1:-}" kpi_name="${2:-}" value="${3:-}"
   [[ -z "$query" ]] && { _ui_err "Usage: sconlx space kpi log <space> <kpi-name> <value>" >&2; return 1; }
 
   local space_id; space_id="$(_space_resolve_id "$query")"
@@ -456,7 +456,7 @@ _space_kpi_log() {
 }
 
 _space_kpi_list() {
-  local query="$1"
+  local query="${$1:-}"
   local space_id; space_id="$(_space_resolve_id "$query")"
   printf '\n  KPIs%s\n' "${space_id:+  —  $(_tsv_get "$_FLAT_SPACE_SPACES" "$space_id" 2)}" >&2
   _ui_hr
@@ -481,7 +481,7 @@ _space_contact_route() {
 }
 
 _space_contact_list() {
-  local query="$1"
+  local query="${$1:-}"
   local space_id=""
   [[ -n "$query" ]] && space_id="$(_space_resolve_id "$query")"
   printf '\n  CONTACTS%s\n' "${space_id:+  —  $(_tsv_get "$_FLAT_SPACE_SPACES" "$space_id" 2)}" >&2
@@ -494,7 +494,7 @@ _space_contact_list() {
 }
 
 _space_contact_add() {
-  local query="$1"
+  local query="${$1:-}"
   [[ -z "$query" ]] && { _ui_err "Usage: sconlx space contact add <space-name|id>" >&2; return 1; }
   local space_id; space_id="$(_space_resolve_id "$query")"
   [[ -z "$space_id" ]] && { _ui_err "Space not found: $query" >&2; return 1; }
@@ -514,7 +514,7 @@ _space_contact_add() {
 }
 
 _space_contact_interaction() {
-  local contact_id="$1"
+  local contact_id="${$1:-}"
   [[ -z "$contact_id" ]] && { _ui_err "Usage: sconlx space contact interaction <id>" >&2; return 1; }
   local name; name="$(_tsv_get "$_FLAT_SPACE_CONTACTS" "$contact_id" 3)"
   [[ -z "$name" ]] && { _ui_err "Contact not found." >&2; return 1; }
@@ -537,7 +537,7 @@ _space_event_route() {
 }
 
 _space_event_add() {
-  local query="$1"
+  local query="${$1:-}"
   [[ -z "$query" ]] && { _ui_err "Usage: sconlx space event add <space-name|id>" >&2; return 1; }
   local space_id; space_id="$(_space_resolve_id "$query")"
   [[ -z "$space_id" ]] && { _ui_err "Space not found." >&2; return 1; }
@@ -555,7 +555,7 @@ _space_event_add() {
 }
 
 _space_event_list() {
-  local query="$1"
+  local query="${$1:-}"
   local space_id=""
   [[ -n "$query" ]] && space_id="$(_space_resolve_id "$query")"
   printf '\n  EVENTS\n' >&2

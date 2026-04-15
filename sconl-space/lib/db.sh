@@ -367,3 +367,138 @@ _db_hook() {
   # Delegate to ai.sh if loaded and enabled
   command -v _ai_hook &>/dev/null && _ai_hook "$hook_name" "$payload" || true
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DAY THEMES + FOCUS BLOCKS
+# Your weekly operating rhythm. Surfaced in the dashboard and task planning.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Day themes (0=Sunday … 6=Saturday) ──
+declare -a _DAY_THEMES=(
+  "Setup Day"          # Sunday  — iSconl build, laundry, backups, updates
+  "Healthcare + XSpace"  # Monday  — biomedical tools, XSpace improvements
+  "Articles + QSpace"  # Tuesday — publish articles, QSpace build
+  "Midweek Reset"      # Wednesday — review, recalibrate, admin
+  "Client Projects"    # Thursday — client work, delivery
+  "Documentation + Articles" # Friday — docs, compile + schedule articles
+  "Adventure Day"      # Saturday — explore, rest, social
+)
+
+# ── Day focus areas (what to pull tasks from) ──
+declare -A _DAY_FOCUS_AREAS=(
+  [0]="isconl|xspace|setup|backup|cleaning"
+  [1]="healthcare|biomedical|wellpath|xspace"
+  [2]="articles|qspace|writing|publish"
+  [3]="review|reset|admin|planning"
+  [4]="client|acexoft|projects|delivery"
+  [5]="docs|documentation|articles|scheduling"
+  [6]="personal|health|adventure|rest"
+)
+
+# ── Focus blocks (time-based) ──
+# Format: "START_HOUR:END_HOUR:NAME:DESCRIPTION"
+declare -a _FOCUS_BLOCKS=(
+  "8:10:Innovator:Deep work — build, create, solve"
+  "11:13:Visionary:Strategic — plan, design, think"
+  "14:16:Creator:Output — write, ship, publish"
+)
+
+# Get today's theme
+_db_day_theme() {
+  local dow; dow="$(date +%w)"  # 0=Sun … 6=Sat
+  printf '%s' "${_DAY_THEMES[$dow]}"
+}
+
+# Get today's focus area keywords (pipe-separated)
+_db_day_focus() {
+  local dow; dow="$(date +%w)"
+  printf '%s' "${_DAY_FOCUS_AREAS[$dow]}"
+}
+
+# Get the current focus block name (empty if outside blocks)
+_db_current_block() {
+  # Force base-10 — date +%-H can return "09" which bash treats as octal
+  local hour=$(( 10#$(date +%H) ))
+  local block
+  for block in "${_FOCUS_BLOCKS[@]}"; do
+    local start="${block%%:*}"; local rest="${block#*:}"
+    local end="${rest%%:*}";   local rest2="${rest#*:}"
+    local name="${rest2%%:*}"
+    if [[ "$hour" -ge "$start" && "$hour" -lt "$end" ]]; then
+      printf '%s' "$name"
+      return 0
+    fi
+  done
+  printf ''
+}
+
+# Get time until next focus block (or time remaining in current)
+_db_block_status() {
+  # Force base-10 on both hour and minute — leading zeros cause octal errors
+  local hour=$(( 10#$(date +%H) ))
+  local min=$(( 10#$(date +%M) ))
+  local now_mins=$(( hour * 60 + min ))
+
+  for block in "${_FOCUS_BLOCKS[@]}"; do
+    local start="${block%%:*}"; local rest="${block#*:}"
+    local end="${rest%%:*}";   local rest2="${rest#*:}"
+    local name="${rest2%%:*}"; local desc="${rest2#*:}"
+
+    local start_m=$(( start * 60 ))
+    local end_m=$(( end * 60 ))
+
+    if [[ "$now_mins" -ge "$start_m" && "$now_mins" -lt "$end_m" ]]; then
+      local rem=$(( end_m - now_mins ))
+      printf 'IN:%s:%dmin remaining (%s)' "$name" "$rem" "$desc"
+      return 0
+    elif [[ "$now_mins" -lt "$start_m" ]]; then
+      local until=$(( start_m - now_mins ))
+      printf 'NEXT:%s:%s — starts in %dmin' "$name" "$desc" "$until"
+      return 0
+    fi
+  done
+  printf 'DONE:—:All focus blocks complete for today'
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EDITOR DETECTION
+# Priority: VS Code → $VISUAL → $EDITOR → gedit/kate → nano
+# Windows: code.exe → notepad
+# ─────────────────────────────────────────────────────────────────────────────
+
+_db_editor() {
+  # VS Code — preferred everywhere
+  if command -v code &>/dev/null; then
+    printf 'code --wait'
+    return 0
+  fi
+  # code-insiders fallback
+  if command -v code-insiders &>/dev/null; then
+    printf 'code-insiders --wait'
+    return 0
+  fi
+  # Windows notepad (Git Bash)
+  if command -v notepad.exe &>/dev/null; then
+    printf 'notepad.exe'
+    return 0
+  fi
+  # $VISUAL / $EDITOR env vars
+  if [[ -n "${VISUAL:-}" ]]; then
+    printf '%s' "$VISUAL"
+    return 0
+  fi
+  if [[ -n "${EDITOR:-}" ]]; then
+    printf '%s' "$EDITOR"
+    return 0
+  fi
+  # Linux GUI editors
+  if command -v gedit &>/dev/null; then printf 'gedit'; return 0; fi
+  if command -v kate &>/dev/null;  then printf 'kate';  return 0; fi
+  if command -v xdg-open &>/dev/null && [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
+    printf 'xdg-open'; return 0
+  fi
+  # Terminal fallback
+  if command -v nano &>/dev/null; then printf 'nano'; return 0; fi
+  if command -v vim  &>/dev/null; then printf 'vim';  return 0; fi
+  printf 'nano'  # last resort
+}

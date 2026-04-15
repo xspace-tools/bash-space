@@ -29,8 +29,8 @@ _CROSS_LOADED=1
 _CROSS_EXPORT_DIR="$HOME/.local/share/isconl/exports"
 _CROSS_FIRST_RUN_MARKER="$_FLAT_DIR/.firstrun_complete"
 
-# Current hour for time-aware suggestions (0-23)
-_CROSS_HOUR="$(date +%H)"
+# Current hour for time-aware suggestions — force base-10, avoid octal trap
+_CROSS_HOUR=$(( 10#$(date +%H) ))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ROUTER
@@ -57,6 +57,9 @@ _cross_route() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 _cross_is_first_run() {
+  # Show welcome only if identity not set AND marker not present
+  # Once skipped or completed, marker is touched and welcome never shows again
+  [[ -f "${_CROSS_FIRST_RUN_MARKER:-/dev/null}" ]] && return 1
   ! _db_identity_exists
 }
 
@@ -83,8 +86,23 @@ _cross_first_run_welcome() {
       ;;
     skip)
       _ui_info "Skipped. Run anytime: sconlx scope identity edit"
+      touch "${_CROSS_FIRST_RUN_MARKER}" 2>/dev/null || true
       ;;
   esac
+}
+
+# Helper: re-show the guided menu (used by back navigation from sub-menus)
+_cross_guided_menu_loop() {
+  # Re-read state and re-show menu without redrawing the full dashboard
+  local today; today="$(_db_today)"
+  local has_reflection="no"
+  [[ -f "$_FLAT_SCOPE_REFLECTIONS_TSV" ]] && \
+    grep -qF "$today" "$_FLAT_SCOPE_REFLECTIONS_TSV" 2>/dev/null && has_reflection="yes"
+  local inbox_count today_count i_ref
+  inbox_count="$(_tsv_count "$_FLAT_SCOPE_INBOX" '$4=="new"')"
+  today_count="$(_tsv_count "$_FLAT_SCOPE_TASKS" '$3=="today"')"
+  i_ref="$(_tsv_count "$_FLAT_SPARK_IDEAS" '$2=="refined"')"
+  _cross_guided_menu "$today" "$has_reflection" "$inbox_count" "$today_count" "$i_ref"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -104,36 +122,48 @@ _cross_dashboard() {
 
   local today; today="$(_db_today)"
 
-  # ── HEADER BOX ──
+  # ── HEADER — clean line-separated, no box drawing ──
+  local day_theme; day_theme="$(_db_day_theme)"
+  local block_status; block_status="$(_db_block_status)"
+
   _ui_blank
-  _ui_box_top
-  _ui_box_line "$(_ui_bold "iSconl")  $(_ui_dim "·  $_DATA_MODE mode")"
-  _ui_box_sep
+  _ui_hr
+  printf '%s%s  %s\n' "$_UI_INDENT"     "$(_ui_bold "iSconl")"     "$(_ui_dim "·  $_DATA_MODE mode")" >&2
+  _ui_hr
 
-  # Date line
-  _ui_box_line "$(_ui_bold "$CTX_GREGORIAN")"
+  # Date + time systems
+  printf '%s%s\n' "$_UI_INDENT" "$(_ui_bold "$CTX_GREGORIAN")" >&2
+  printf '%s%s  %s\n' "$_UI_INDENT"     "$CTX_EQ_SHORT"     "$(_ui_dim "·  $CTX_SPRINT_SHORT")" >&2
 
-  # Equicycle + Sprint
-  _ui_box_line "$CTX_EQ_SHORT  $(_ui_dim "·  $CTX_SPRINT_SHORT")"
+  # Day theme + focus block status on same line
+  local block_note=""
+  case "$block_status" in
+    IN:*)
+      local _bn="${block_status#IN:}"; _bn="${_bn%%:*}"
+      local _br="${block_status##*:}"
+      block_note="  $(_ui_dim "·")  $(_ui_bold "$_bn block")  $(_ui_dim "($_br)")" ;;
+    NEXT:*)
+      local _bi="${block_status#NEXT:}"; local _bn="${_bi%%:*}"; local _bu="${_bi##*:}"
+      block_note="  $(_ui_dim "·  next: $_bn  ($_bu)")" ;;
+  esac
+  printf '%s%s%s\n' "$_UI_INDENT" "$(_ui_dim "$day_theme")" "$block_note" >&2
 
   # Year progress
-  local year_line
-  year_line="Year ${CTX_YEAR_PCT}%  $(_ui_dim "${CTX_YEAR_BAR}  day ${CTX_YEAR_DAY} of ${CTX_YEAR_TOTAL}")"
-  _ui_box_line "$year_line"
+  printf '%sYear %s  %s\n' "$_UI_INDENT"     "${CTX_YEAR_PCT}%"     "$(_ui_dim "${CTX_YEAR_BAR}  day ${CTX_YEAR_DAY} / ${CTX_YEAR_TOTAL}")" >&2
 
-  # Age + birthday countdown (only if birthday is configured)
+  # Age (only when birthday set)
   if [[ -n "${CTX_AGE_SHORT:-}" ]]; then
-    _ui_box_line "Age $(_ui_bold "$CTX_AGE_SHORT")  $(_ui_dim "·  ${CTX_AGE_HOURS:+${CTX_AGE_HOURS} hours  ·  }${CTX_DAYS_TO_BDAY}d to birthday  (turning $CTX_TURNING)")"
+    printf '%sAge %s  %s\n' "$_UI_INDENT"       "$(_ui_bold "$CTX_AGE_SHORT")"       "$(_ui_dim "·  ${CTX_DAYS_TO_BDAY}d to birthday  (turning $CTX_TURNING)")" >&2
   fi
 
-  # Season / identity context
-  if [[ -n "${SEASON_NAME:-}" ]]; then
-    _ui_box_sep
-    _ui_box_line "$(_ui_italic "${SEASON_THEME:-$SEASON_NAME}")"
-    [[ -n "${CORE_VALUES:-}" ]] && _ui_box_line "$(_ui_dim "${CORE_VALUES//|/ · }")"
+  # Season / identity  
+  if [[ -n "${SEASON_THEME:-${SEASON_NAME:-}}" ]]; then
+    _ui_hr
+    printf '%s%s\n' "$_UI_INDENT" "$(_ui_italic "${SEASON_THEME:-$SEASON_NAME}")" >&2
+    [[ -n "${CORE_VALUES:-}" ]] &&       printf '%s%s\n' "$_UI_INDENT" "$(_ui_dim "${CORE_VALUES//|/ · }")" >&2
   fi
 
-  _ui_box_bot
+  _ui_hr
 
   # ── SCOPE ──
   _ui_section_scope "SCOPE" "daily rhythm"
@@ -224,8 +254,9 @@ _cross_dashboard() {
   _ui_section_spark "SPARK" "inner world"
 
   # Journal
-  local journal_file="$_FLAT_JOURNAL_DIR/${today}.md"
-  if [[ -f "$journal_file" ]]; then
+  # Check both new (YYYYMMDD_HHMM_title.md) and legacy (YYYYMMDD.md) formats
+  local journal_file; journal_file="$(_journal_today_file 2>/dev/null || true)"
+  if [[ -n "$journal_file" ]]; then
     local wc; wc="$(wc -w < "$journal_file" 2>/dev/null | tr -d ' ')"
     local streak; streak="$(_spark_journal_streak)"
     _ui_row "Journal" "$(_ui_green "written")  $(_ui_dim "·  $wc words  ·  streak: ${streak}d")"
@@ -289,7 +320,7 @@ _cross_guided_menu() {
       actions+=("Process inbox  ($inbox_count items)")
       keys+=("scope_inbox")
     }
-    [[ ! -f "$_FLAT_JOURNAL_DIR/${today}.md" ]] && {
+    ! _journal_has_today 2>/dev/null && {
       actions+=("Write morning journal entry")
       keys+=("journal")
     }
@@ -300,7 +331,7 @@ _cross_guided_menu() {
       actions+=("Evening reflection")
       keys+=("scope_reflect")
     }
-    [[ ! -f "$_FLAT_JOURNAL_DIR/${today}.md" ]] && {
+    ! _journal_has_today 2>/dev/null && {
       actions+=("Write journal entry")
       keys+=("journal")
     }
@@ -311,7 +342,7 @@ _cross_guided_menu() {
 
   # Daytime: balanced
   else
-    [[ ! -f "$_FLAT_JOURNAL_DIR/${today}.md" ]] && {
+    ! _journal_has_today 2>/dev/null && {
       actions+=("Write journal entry")
       keys+=("journal")
     }
@@ -398,6 +429,7 @@ _cross_dispatch_action() {
 
 _cross_more_actions() {
   local action
+  _UI_SHOW_BACK=1 _UI_BACK_LABEL="Back to main menu"
   action="$(_ui_action_menu "All options" \
     "Add a task:scope_task_add" \
     "Add a goal:scope_goal_add" \
@@ -424,16 +456,22 @@ _cross_more_actions() {
     cross_export)     _cross_export ;;
     cross_status)     _cross_status ;;
   esac
+  _UI_SHOW_BACK=0
 }
 
 # Quick capture menu
 _cross_capture_menu() {
   local action
+  _UI_SHOW_BACK=1 _UI_BACK_LABEL="Back to menu"
   action="$(_ui_action_menu "Capture what?" \
     "Inbox item  (process later):inbox" \
     "Idea  (goes to Spark pipeline):idea" \
     "Quick note  (opens editor):note" \
-    "Task  (goes to Scope backlog):task")" || return 0
+    "Task  (goes to Scope backlog):task")"
+  local _rc=$?
+  _UI_SHOW_BACK=0
+  [[ $_rc -eq 2 ]] && _cross_guided_menu_loop && return 0  # back
+  [[ $_rc -ne 0 ]] && return 0
 
   case "$action" in
     inbox) _scope_inbox_add ;;

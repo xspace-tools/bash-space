@@ -1,0 +1,21 @@
+{
+  "_comment": "sconl-space/data/calendar.json — personal calendar data. Edit directly or via: sconlx cal",
+  "_format_notes": {
+    "birthdays": "date is MM-DD. year_of_birth optional. source: manual|dia",
+    "custom_events": "date YYYY-MM-DD for one-time, MM-DD for annual recurring",
+    "categories": "birthday|anniversary|memorial|holiday|personal|work|health"
+  },
+
+  "birthdays": [],
+
+  "custom_events": [],
+
+  "settings": {
+    "upcoming_days_ahead": 30,
+    "birthday_warn_days": 7,
+    "show_holidays": true,
+    "holiday_regions": ["KE", "INT"],
+    "show_today_in_history": true,
+    "history_facts_per_day": 3
+  }
+}

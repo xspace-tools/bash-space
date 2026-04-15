@@ -62,8 +62,12 @@ _scope_route() {
 _scope_dashboard() {
   local eq_str; eq_str="$(_eq_today_short)"
   local today; today="$(_db_today)"
+  local day_theme; day_theme="$(_db_day_theme)"
+  local current_block; current_block="$(_db_current_block)"
+  local theme_line="$day_theme"
+  [[ -n "$current_block" ]] && theme_line="$day_theme  ·  $(_ui_bold "$current_block block")"
 
-  _ui_section_scope "SCOPE" "$eq_str"
+  _ui_section_scope "SCOPE" "$eq_str  ·  $(_ui_dim "$theme_line")"
 
   # Identity line
   if _db_identity_exists; then
@@ -171,9 +175,9 @@ _scope_inbox_list() {
 }
 
 _scope_inbox_add() {
-  local title="$1"
+  local title="${1:-}"
   if [[ -z "$title" ]]; then
-    title="$(_ui_prompt "Capture")"
+    title="$(_ui_prompt "Capture")" || { _ui_info "Cancelled." >&2; return 0; }
   fi
   [[ -z "$title" ]] && { _ui_warn "Nothing captured." >&2; return 0; }
 
@@ -283,7 +287,7 @@ _scope_today_list() {
 }
 
 _scope_today_add() {
-  local task_id="$1"
+  local task_id="${1:-}"
   [[ -z "$task_id" ]] && { _ui_err "Usage: sconlx scope today add <task-id>" >&2; return 1; }
   if ! _tsv_exists "$_FLAT_SCOPE_TASKS" "$task_id"; then
     _ui_err "Task $task_id not found." >&2; return 1
@@ -367,7 +371,7 @@ _scope_task_list() {
 }
 
 _scope_task_list_compact() {
-  local status="$1" limit="${2:-5}"
+  local status="${1:-backlog}" limit="${2:-5}"
   [[ -f "$_FLAT_SCOPE_TASKS" ]] || return 0
   awk -F'\t' -v s="$status" -v lim="$limit" -v warn="$_SCOPE_DEFERRED_WARN" '
     NR>1 && $3==s {
@@ -384,12 +388,13 @@ _scope_task_list_compact() {
 }
 
 _scope_task_add() {
-  local title="$1"
+  local title="${1:-}"
 
-  printf '\n  %s  ADD TASK\n' "$(_ui_bold "+")" >&2
-  _ui_hr
+  _ui_section "ADD TASK"
 
-  [[ -z "$title" ]] && title="$(_ui_prompt "Title")"
+  if [[ -z "$title" ]]; then
+    title="$(_ui_prompt "Title")" || { _ui_info "Cancelled." >&2; return 0; }
+  fi
   [[ -z "$title" ]] && { _ui_warn "No title given." >&2; return 0; }
 
   local priority
@@ -417,7 +422,7 @@ _scope_task_add() {
 }
 
 _scope_task_add_from_inbox() {
-  local inbox_id="$1" title="$2"
+  local inbox_id="${1:-}" title="${2:-}"
   local id; id="$(_db_next_id "T" "$_FLAT_SCOPE_TASKS")"
   local now; now="$(_db_today)"
   printf '%s\t%s\tbacklog\tmed\t\t0\t-\tmedium\t%s\t%s\n' \
@@ -427,7 +432,7 @@ _scope_task_add_from_inbox() {
 }
 
 _scope_task_done() {
-  local id="$1"
+  local id="${1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx scope task done <id>" >&2; return 1; }
   if ! _tsv_exists "$_FLAT_SCOPE_TASKS" "$id"; then
     _ui_err "Task $id not found." >&2; return 1
@@ -440,7 +445,7 @@ _scope_task_done() {
 }
 
 _scope_task_defer() {
-  local id="$1"
+  local id="${1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx scope task defer <id>" >&2; return 1; }
   if ! _tsv_exists "$_FLAT_SCOPE_TASKS" "$id"; then
     _ui_err "Task $id not found." >&2; return 1
@@ -458,7 +463,7 @@ _scope_task_defer() {
 }
 
 _scope_task_del() {
-  local id="$1"
+  local id="${1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx scope task del <id>" >&2; return 1; }
   local title; title="$(_tsv_get "$_FLAT_SCOPE_TASKS" "$id" 2)"
   _ui_confirm "Archive task '$title'?" || return 0
@@ -467,7 +472,7 @@ _scope_task_del() {
 }
 
 _scope_task_show() {
-  local id="$1"
+  local id="${1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx scope task show <id>" >&2; return 1; }
   if ! _tsv_exists "$_FLAT_SCOPE_TASKS" "$id"; then
     _ui_err "Task $id not found." >&2; return 1
@@ -537,7 +542,7 @@ _scope_goal_add() {
   printf '\n  %s  ADD GOAL\n' "$(_ui_bold "+")" >&2
   _ui_hr
 
-  local title; title="$(_ui_prompt "Goal title")"
+  local title; title="$(_ui_prompt "Goal title")" || { _ui_info "Cancelled." >&2; return 0; }
   [[ -z "$title" ]] && { _ui_warn "No title given." >&2; return 0; }
 
   local kpi; kpi="$(_ui_prompt "KPI (what you'll measure, e.g. 'pages written')" "")"
@@ -563,7 +568,7 @@ _scope_goal_add() {
 }
 
 _scope_goal_add_from_inbox() {
-  local inbox_id="$1" title="$2"
+  local inbox_id="${1:-}" title="${2:-}"
   local id; id="$(_db_next_id "G" "$_FLAT_SCOPE_GOALS")"
   local now; now="$(_db_today)"
   printf '%s\t%s\t\t1\t0\tcycle\tactive\t1\t%s\t%s\n' \
@@ -573,7 +578,7 @@ _scope_goal_add_from_inbox() {
 }
 
 _scope_goal_show() {
-  local id="$1"
+  local id="${1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx scope goal show <id>" >&2; return 1; }
   awk -F'\t' -v id="$id" 'NR>1 && $1==id {
     pct = ($4+0 > 0) ? int($5*100/$4) : 0
@@ -589,7 +594,7 @@ _scope_goal_show() {
 }
 
 _scope_goal_kpi() {
-  local id="$1" value="$2"
+  local id="${1:-}" value="${2:-}"
   [[ -z "$id" || -z "$value" ]] && {
     _ui_err "Usage: sconlx scope goal kpi <id> <value>" >&2; return 1
   }
@@ -608,7 +613,7 @@ _scope_goal_kpi() {
 }
 
 _scope_goal_done() {
-  local id="$1"
+  local id="${1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx scope goal done <id>" >&2; return 1; }
   _ui_confirm "Mark goal $id as complete?" || return 0
   _tsv_update_field "$_FLAT_SCOPE_GOALS" "$id" 7 "completed"
@@ -884,40 +889,54 @@ _scope_identity_route() {
 }
 
 _scope_identity_view() {
-  printf '\n  Identity Layer\n' >&2
-  _ui_hr
+  _ui_section "IDENTITY"
 
   if ! _db_identity_exists; then
-    _ui_info "Identity not set up yet." >&2
-    _ui_info "Run: sconlx scope identity edit" >&2
-    printf '\n' >&2
+    _ui_info "Identity not set up yet."
+    _ui_hint "Run: sconlx scope identity edit"
+    _ui_blank
     return 0
   fi
 
   _db_identity_load
-  printf '\n  %s\n' "$(_ui_bold "NORTH STAR")" >&2
-  printf '  %s\n' "${NORTH_STAR:-—}" >&2
-  printf '  %s\n' "$(_ui_dim "${DECADE_VISION:-}")" >&2
 
-  printf '\n  %s\n' "$(_ui_bold "CORE VALUES")" >&2
-  # Display pipe-separated values as bullets
-  IFS='|' read -ra vals <<< "${CORE_VALUES:-}"
+  # North Star
+  _ui_subsection "North Star"
+  printf '%s  %s\n' "$_UI_INDENT" "${NORTH_STAR:-—}" >&2
+  [[ -n "${DECADE_VISION:-}" ]] &&     printf '%s  %s\n' "$_UI_INDENT" "$(_ui_dim "${DECADE_VISION}")" >&2
+
+  # Core Values
+  _ui_blank
+  _ui_subsection "Core Values"
+  IFS='|' read -ra vals <<< "${CORE_VALUES:-—}"
   for v in "${vals[@]}"; do
-    printf '  · %s\n' "$v" >&2
+    [[ -n "${v// /}" ]] && printf '%s  %s  %s\n' "$_UI_INDENT" "$(_ui_dim "·")" "${v## }" >&2
   done
 
-  printf '\n  %s\n' "$(_ui_bold "CURRENT SEASON  ·  ${SEASON_NAME:-}")" >&2
-  printf '  %s\n' "${SEASON_THEME:-}" >&2
-  printf '  %s\n' "$(_ui_dim "Word: ${SEASON_WORD:-}  ·  Year: ${SEASON_YEAR:-}")" >&2
+  # Current Season
+  _ui_blank
+  _ui_subsection "Season  ·  ${SEASON_NAME:-}"
+  printf '%s  %s\n' "$_UI_INDENT" "${SEASON_THEME:-}" >&2
+  printf '%s  %s\n' "$_UI_INDENT" "$(_ui_dim "${SEASON_WORD:-}  ·  ${SEASON_YEAR:-}")" >&2
 
+  # Annual Intentions
   if [[ -n "${ANNUAL_INTENTIONS:-}" ]]; then
-    printf '\n  %s\n' "$(_ui_bold "ANNUAL INTENTIONS")" >&2
-    IFS='|' read -ra ints <<< "${ANNUAL_INTENTIONS:-}"
+    _ui_blank
+    _ui_subsection "This Year"
+    IFS='|' read -ra ints <<< "${ANNUAL_INTENTIONS}"
     for intent in "${ints[@]}"; do
-      printf '  · %s\n' "$intent" >&2
+      local trimmed="${intent## }"
+      [[ -n "${trimmed// /}" ]] && printf '%s  %s  %s\n' "$_UI_INDENT" "$(_ui_dim "·")" "$trimmed" >&2
     done
   fi
-  printf '\n' >&2
+
+  # Birthday / age
+  if [[ -n "${BIRTHDAY:-}" ]]; then
+    _ui_blank
+    _ctx_load 2>/dev/null || true
+    [[ -n "${CTX_AGE_SHORT:-}" ]] &&       printf '%s  %s  %s\n' "$_UI_INDENT" "$(_ui_dim "Age")" "${CTX_AGE_SHORT}  $(_ui_dim "·  ${CTX_DAYS_TO_BDAY}d to birthday (turning ${CTX_TURNING})")" >&2
+  fi
+  _ui_blank
 }
 
 _scope_identity_edit() {
@@ -1025,23 +1044,61 @@ _scope_identity_season() {
 
 _scope_plan() {
   local eq_str; eq_str="$(_eq_today_short)"
-  printf '\n  Weekly Plan  ·  %s\n' "$eq_str" >&2
-  _ui_hr
+  local day_theme; day_theme="$(_db_day_theme)"
 
-  # Show current goals as context
+  _ui_section_scope "WEEKLY PLAN" "$eq_str"
+
+  # Today's theme
+  _ui_subsection "Today  ·  $(_ui_dim "$day_theme")"
+
+  # Show focus blocks for the day
+  _ui_blank
+  printf '%s  %s
+' "$_UI_INDENT" "$(_ui_bold "Focus Blocks")" >&2
+  local block current_block; current_block="$(_db_current_block)"
+  for block in "${_FOCUS_BLOCKS[@]}"; do
+    local start="${block%%:*}"; local rest="${block#*:}"
+    local end="${rest%%:*}";   local rest2="${rest#*:}"
+    local bname="${rest2%%:*}"; local bdesc="${rest2#*:}"
+    local marker="  "; [[ "$bname" == "$current_block" ]] && marker="> "
+    printf '%s  %s%s  %s:%s0 – %s:%s0  %s
+'       "$_UI_INDENT" "$marker" "$(_ui_bold "$bname")"       "$start" "0" "$end" "0"       "$(_ui_dim "$bdesc")" >&2
+  done
+
+  # Goals context
   local goal_count; goal_count="$(_tsv_count "$_FLAT_SCOPE_GOALS" '$7=="active"')"
-  [[ "$goal_count" -gt 0 ]] && {
-    printf '\n  %s\n' "$(_ui_bold "Active Goals (for context)")" >&2
-    _scope_goal_list_compact 3
-  }
+  if [[ "$goal_count" -gt 0 ]]; then
+    _ui_blank
+    _ui_subsection "Active Goals"
+    _scope_goal_list_compact 4
+  fi
 
-  # Show backlog tasks to select from
+  # Backlog — filtered by today's focus area
+  local day_focus; day_focus="$(_db_day_focus)"
   local backlog_count; backlog_count="$(_tsv_count "$_FLAT_SCOPE_TASKS" '$3=="backlog"')"
-  [[ "$backlog_count" -gt 0 ]] && {
-    printf '\n  %s\n' "$(_ui_bold "Backlog ($backlog_count tasks)")" >&2
-    _scope_task_list_compact "backlog" 10
-  }
 
-  printf '\n  %s\n' "$(_ui_dim "Use 'sconlx scope today add <id>' to select tasks for today.")" >&2
-  printf '  %s\n\n' "$(_ui_dim "Use 'sconlx scope task add' to create new tasks.")" >&2
+  if [[ "$backlog_count" -gt 0 ]]; then
+    _ui_blank
+    _ui_subsection "Backlog tasks  $(_ui_dim "(all $backlog_count)")"
+    _scope_task_list_compact "backlog" 10
+
+    # Suggest which tasks match today's focus
+    if [[ -n "$day_focus" ]] && [[ -f "$_FLAT_SCOPE_TASKS" ]]; then
+      _ui_blank
+      local focus_pattern; focus_pattern="$(printf '%s' "$day_focus" | tr '|' '\|')"
+      local matches
+      matches="$(awk -F'	' -v pat="$focus_pattern"         'NR>1 && $3=="backlog" && tolower($2)~pat {printf "  %-8s  %s
+",$1,$2}'         "$_FLAT_SCOPE_TASKS" 2>/dev/null | head -5)"
+      if [[ -n "$matches" ]]; then
+        _ui_subsection "Suggested for today  $(_ui_dim "(matches: $day_theme)")"
+        printf '%s
+' "$matches" >&2
+      fi
+    fi
+  fi
+
+  _ui_blank
+  _ui_hint "sconlx scope today add <id>  — move a task to today"
+  _ui_hint "sconlx scope task add        — create a new task"
+  _ui_blank
 }

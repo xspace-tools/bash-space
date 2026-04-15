@@ -213,6 +213,7 @@ _ui_health_dots() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 _ui_is_quit() { [[ "${1,,}" == "q" || "${1,,}" == "quit" ]]; }
+_ui_is_back() { [[ "${1,,}" == "b" || "${1,,}" == "back" ]]; }
 
 # Text prompt — returns exit 1 if user types q
 _ui_prompt() {
@@ -260,8 +261,9 @@ _ui_confirm() {
 # Always appends [q] Quit as the last option.
 # Returns exit 1 if user quits.
 _ui_action_menu() {
-  local title="$1"; shift
-  # Args: "Display text:return_key" pairs
+  # Args: title "Display text:return_key" ...
+  # Exit codes: 0=choice made, 1=quit, 2=back
+  local title="${1:-}" back_label="${_UI_BACK_LABEL:-Back}"; shift
   local items=("$@")
   _ui_blank
   printf '%s%s\n' "$_UI_INDENT" "$(_ui_bold "$title")" >&2
@@ -271,12 +273,15 @@ _ui_action_menu() {
     local display="${items[$i]%%:*}"
     printf '%s  [%d]  %s\n' "$_UI_INDENT" "$(( i+1 ))" "$display" >&2
   done
+  # Show [b] Back only if caller set _UI_SHOW_BACK=1
+  [[ "${_UI_SHOW_BACK:-0}" == "1" ]] &&     printf '%s  [b]  %s\n' "$_UI_INDENT" "$(_ui_dim "$back_label")" >&2
   printf '%s  [q]  Quit\n' "$_UI_INDENT" >&2
   _ui_blank
   printf '%s  > ' "$_UI_INDENT" >&2
   local c
   IFS= read -r c
   _ui_is_quit "$c" && return 1
+  _ui_is_back "$c" && return 2
   if [[ "$c" =~ ^[0-9]+$ ]] && [[ "$c" -ge 1 ]] && [[ "$c" -le "${#items[@]}" ]]; then
     printf '%s' "${items[$(( c-1 ))]##*:}"
   else
@@ -286,7 +291,7 @@ _ui_action_menu() {
 
 # Simple numbered list picker (no key suffixes — returns display text)
 _ui_menu_choice() {
-  local title="$1"; shift
+  local title="${1:-}"; shift
   local opts=("$@")
   _ui_blank
   printf '%s%s\n' "$_UI_INDENT" "$(_ui_bold "$title")" >&2
@@ -295,12 +300,14 @@ _ui_menu_choice() {
   for (( i=0; i<${#opts[@]}; i++ )); do
     printf '%s  [%d]  %s\n' "$_UI_INDENT" "$(( i+1 ))" "${opts[$i]}" >&2
   done
+  [[ "${_UI_SHOW_BACK:-0}" == "1" ]] &&     printf '%s  [b]  %s\n' "$_UI_INDENT" "$(_ui_dim "Back")" >&2
   printf '%s  [q]  Cancel\n' "$_UI_INDENT" >&2
   _ui_blank
   printf '%s  > ' "$_UI_INDENT" >&2
   local c
   IFS= read -r c
   _ui_is_quit "$c" && return 1
+  _ui_is_back "$c" && return 2
   if [[ "$c" =~ ^[0-9]+$ ]] && [[ "$c" -ge 1 ]] && [[ "$c" -le "${#opts[@]}" ]]; then
     printf '%s' "${opts[$(( c-1 ))]}"
   else

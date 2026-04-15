@@ -1,0 +1,13 @@
+{
+  "_comment": "sconl-space/data/calendar.json — personal calendar data. Edit directly or: sconlx cal edit",
+  "birthdays": [],
+  "custom_events": [],
+  "settings": {
+    "upcoming_days_ahead": 30,
+    "birthday_warn_days": 7,
+    "show_holidays": true,
+    "holiday_regions": ["KE", "INT"],
+    "show_today_in_history": true,
+    "history_facts_per_day": 3
+  }
+}

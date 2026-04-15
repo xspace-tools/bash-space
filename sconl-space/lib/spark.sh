@@ -121,12 +121,11 @@ _spark_dashboard() {
 
 _spark_journal_route() {
   local cmd="${1:-open}"
-  # If arg looks like a date, treat it as a date override
   if [[ "$cmd" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
     _spark_journal_open "$cmd"; return 0
   fi
   case "$cmd" in
-    view)  shift; _spark_journal_view ;;
+    view)  _spark_journal_view ;;
     list)  _spark_journal_list ;;
     new)   _spark_journal_new ;;
     ""|open) _spark_journal_open ;;
@@ -134,120 +133,257 @@ _spark_journal_route() {
   esac
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# JOURNAL FILE NAMING
+# New format: YYYYMMDD_HHMM_<slug>.md
+# Legacy entries YYYYMMDD.md are still readable and shown in list.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Build a filename slug from a title
+_journal_slugify() {
+  local title="${1:-}"
+  printf '%s' "$title" \
+    | tr '[:upper:]' '[:lower:]' \
+    | tr -cs 'a-z0-9' '_' \
+    | sed 's/__*/_/g; s/^_//; s/_$//' \
+    | cut -c1-40
+}
+
+# Find today's journal file (new or legacy format)
+_journal_today_file() {
+  local today; today="$(date +%Y%m%d)"
+  # New-format entries for today: YYYYMMDD_HHMM_*.md
+  local found; found="$(find "$_FLAT_JOURNAL_DIR" -maxdepth 1 \
+    -name "${today}_*.md" 2>/dev/null | sort | tail -1)"
+  [[ -n "$found" ]] && { printf '%s' "$found"; return 0; }
+  # Legacy: YYYYMMDD.md
+  local legacy="$_FLAT_JOURNAL_DIR/${today}.md"
+  [[ -f "$legacy" ]] && { printf '%s' "$legacy"; return 0; }
+  printf ''
+}
+
+# Check if any journal entry exists for today
+_journal_has_today() {
+  local today; today="$(date +%Y%m%d)"
+  find "$_FLAT_JOURNAL_DIR" -maxdepth 1 \
+    \( -name "${today}_*.md" -o -name "${today}.md" \) 2>/dev/null \
+    | grep -q '.' 2>/dev/null
+}
+
+# Open editor on a file — handles VS Code, notepad, nano
+_journal_open_editor() {
+  local file="$1"
+  local editor_cmd; editor_cmd="$(_db_editor)"
+  # Split into command + args safely
+  eval "$editor_cmd \"\$file\""
+}
+
+# Prompt for a title and return a new journal filepath
+_journal_new_filepath() {
+  local date_str="${1:-$(date +%Y%m%d)}"
+  local time_str; time_str="$(date +%H%M)"
+  local title; title="$(_ui_prompt "Journal entry title  (optional — Enter to skip)")" || true
+  local slug=""
+  [[ -n "$title" ]] && slug="_$(_journal_slugify "$title")"
+  printf '%s/%s_%s%s.md' "$_FLAT_JOURNAL_DIR" "$date_str" "$time_str" "$slug"
+}
+
 _spark_journal_open() {
-  local date_target="${1:-$(_db_today)}"
-  local journal_file="$_FLAT_JOURNAL_DIR/${date_target}.md"
-  local editor="${EDITOR:-${VISUAL:-nano}}"
-
-  # Create with template if it doesn't exist
-  if [[ ! -f "$journal_file" ]]; then
-    local eq_str; eq_str="$(_eq_for_date "$date_target" | awk -F'\t' \
-      '{printf "Cycle %s · Day %s · %s", $2, $3, $4}')"
-    local today_tasks=""
-    if [[ "$date_target" == "$(_db_today)" ]]; then
-      today_tasks="$(awk -F'\t' 'NR>1 && $3=="today" {printf "- [ ] %s\n", $2}' \
-        "$_FLAT_SCOPE_TASKS" 2>/dev/null | head -5 || true)"
-    fi
-
-    cat > "$journal_file" <<TEMPLATE
-# Journal — $date_target
-**Equicycle:** $eq_str
-
-## Morning
-_What is the intention for today?_
-
-
-## Notes
-${today_tasks:+### Today's tasks
-$today_tasks
-}
-
-## Evening
-_What happened? What am I grateful for?_
-
-
-TEMPLATE
+  local date_arg="${1:-}"
+  # Normalize: accept YYYY-MM-DD or YYYYMMDD, default to today
+  local date_target
+  if [[ -z "$date_arg" ]]; then
+    date_target="$(date +%Y%m%d)"
+  else
+    date_target="${date_arg//-/}"
   fi
 
-  # Offer to expand on yesterday's reflection if available
-  local yesterday; yesterday="$(python3 -c \
-    "from datetime import date, timedelta; print(str(date.fromisoformat('$date_target') - timedelta(1)))" \
-    2>/dev/null || true)"
-  local reflect_file="$_FLAT_SCOPE_REFLECTIONS_DIR/${yesterday}.md"
-  if [[ -f "$reflect_file" && ! -s "${journal_file}.expanded" ]]; then
-    _ui_info "Yesterday's reflection is available to expand into this entry." >&2
-    if _ui_confirm "Append it as context?" "n"; then
-      printf '\n\n---\n## From Yesterday'\''s Scope Reflection\n' >> "$journal_file"
-      cat "$reflect_file" >> "$journal_file"
-      touch "${journal_file}.expanded"  # mark so we don't offer again
+  local today_fmt; today_fmt="$(date +%Y%m%d)"
+  local is_today=0; [[ "$date_target" == "$today_fmt" ]] && is_today=1
+
+  # Find existing entry for this date (new or legacy format)
+  local journal_file
+  journal_file="$(find "$_FLAT_JOURNAL_DIR" -maxdepth 1 \
+    \( -name "${date_target}_*.md" -o -name "${date_target}.md" \) \
+    ! -name "*.expanded" 2>/dev/null | sort | tail -1)"
+
+  local is_new=0
+  if [[ -z "$journal_file" ]]; then
+    is_new=1
+    # Ask for title before creating the file
+    _ui_blank
+    local title
+    title="$(_ui_prompt "Entry title  (optional — Enter to skip)")" || {
+      _ui_info "Cancelled." >&2; return 0
+    }
+    local time_str; time_str="$(date +%H%M)"
+    local slug=""
+    [[ -n "$title" ]] && slug="_$(_journal_slugify "$title")"
+    journal_file="$_FLAT_JOURNAL_DIR/${date_target}_${time_str}${slug}.md"
+  else
+    _ui_ok "Opening: $(basename "$journal_file")"
+  fi
+
+  # Offer to append yesterday's reflection BEFORE opening the editor
+  if [[ $is_today -eq 1 ]]; then
+    local yesterday
+    yesterday="$(python3 -c \
+      "from datetime import date,timedelta; print(str(date.today()-timedelta(1)))" \
+      2>/dev/null)"
+    local reflect_file="$_FLAT_SCOPE_REFLECTIONS_DIR/${yesterday}.md"
+    local expanded_marker="${journal_file}.expanded"
+    if [[ -f "$reflect_file" && ! -f "$expanded_marker" ]]; then
+      _ui_blank
+      _ui_info "Yesterday's reflection is available."
     fi
   fi
 
-  "$editor" "$journal_file"
-  local wc; wc="$(wc -w < "$journal_file" 2>/dev/null || echo 0)"
-  _ui_ok "Journal saved — $wc words  ($date_target)"
-}
+  # Create template for new entries
+  if [[ $is_new -eq 1 ]]; then
+    local eq_str; eq_str="$(_eq_today_short)"
+    local day_theme; day_theme="$(_db_day_theme)"
 
+    # Current block (keep it simple — no complex substitution)
+    local current_block; current_block="$(_db_current_block)"
+    local block_note=""
+    [[ -n "$current_block" ]] && block_note="  ·  $current_block block"
+
+    # Display title for the heading
+    local heading_title
+    if [[ -n "${title:-}" ]]; then
+      heading_title="$title"
+    elif [[ $is_today -eq 1 ]]; then
+      heading_title="$(date '+%A, %B %d, %Y')"
+    else
+      heading_title="$(python3 -c \
+        "from datetime import datetime; \
+         print(datetime.strptime('${date_target}','%Y%m%d').strftime('%A, %B %d, %Y'))" \
+        2>/dev/null || date '+%A, %B %d, %Y')"
+    fi
+
+    # Build task checklist separately (avoid complex heredoc substitution)
+    local task_section=""
+    if [[ $is_today -eq 1 && -f "$_FLAT_SCOPE_TASKS" ]]; then
+      local tasks_raw
+      tasks_raw="$(awk -F'\t' 'NR>1 && $3=="today" {printf "- [ ] %s\n", $2}' \
+        "$_FLAT_SCOPE_TASKS" 2>/dev/null | head -6)"
+      if [[ -n "$tasks_raw" ]]; then
+        task_section="$(printf '\n## Tasks\n%s\n' "$tasks_raw")"
+      fi
+    fi
+
+    # Write template — use printf, not heredoc, to avoid substitution issues
+    {
+      printf '# %s\n' "$heading_title"
+      printf '*%s  ·  %s%s*\n' "$eq_str" "$day_theme" "$block_note"
+      printf '%s\n' "$task_section"
+      printf '\n## Morning\n\n\n## Notes\n\n\n## Evening\n\n'
+    } > "$journal_file"
+
+    _ui_ok "New entry: $(basename "$journal_file")"
+  fi
+
+  # Append reflection if user said yes (do this after file exists)
+  if [[ $is_today -eq 1 ]]; then
+    local yesterday
+    yesterday="$(python3 -c \
+      "from datetime import date,timedelta; print(str(date.today()-timedelta(1)))" \
+      2>/dev/null)"
+    local reflect_file="$_FLAT_SCOPE_REFLECTIONS_DIR/${yesterday}.md"
+    local expanded_marker="${journal_file}.expanded"
+    if [[ -f "$reflect_file" && ! -f "$expanded_marker" ]]; then
+      if _ui_confirm "Append yesterday's reflection as context?" "n"; then
+        printf '\n---\n## From yesterday'\''s reflection\n\n' >> "$journal_file"
+        cat "$reflect_file" >> "$journal_file"
+        touch "$expanded_marker"
+        _ui_ok "Reflection appended."
+      fi
+    fi
+  fi
+
+  # Open in editor — VS Code, notepad, or nano
+  local editor_cmd; editor_cmd="$(_db_editor)"
+  _ui_blank
+  _ui_hint "Opening in: ${editor_cmd%% *}"
+  eval "$editor_cmd \"$journal_file\""
+
+  # Show word count when editor closes
+  local wc_out; wc_out="$(wc -w < "$journal_file" 2>/dev/null | tr -d ' ')"
+  _ui_blank
+  _ui_ok "Saved — $wc_out words  ($(basename "$journal_file"))"
+}
 _spark_journal_view() {
-  local today; today="$(_db_today)"
-  local journal_file="$_FLAT_JOURNAL_DIR/${today}.md"
-  if [[ -f "$journal_file" ]]; then
+  local today; today="$(date +%Y%m%d)"
+  local journal_file; journal_file="$(_journal_today_file)"
+  if [[ -n "$journal_file" ]]; then
+    _ui_blank
+    printf '%s  %s\n\n' "$_UI_INDENT" "$(_ui_dim "$(basename "$journal_file")")" >&2
     cat "$journal_file" >&2
   else
-    _ui_info "No journal entry for today. Run: sconlx journal" >&2
+    _ui_info "No journal entry for today."
+    _ui_hint "Run: sconlx journal"
   fi
 }
 
 _spark_journal_list() {
-  printf '\n  JOURNAL ENTRIES\n' >&2
-  _ui_hr
+  _ui_section "JOURNAL ENTRIES"
   if [[ -d "$_FLAT_JOURNAL_DIR" ]]; then
-    find "$_FLAT_JOURNAL_DIR" -name "*.md" | sort -r | head -30 | \
+    find "$_FLAT_JOURNAL_DIR" -maxdepth 1 -name "*.md" \
+      ! -name "*.expanded" | sort -r | head -30 | \
     while IFS= read -r f; do
-      local date_str; date_str="$(basename "$f" .md)"
-      local wc; wc="$(wc -w < "$f" 2>/dev/null | tr -d ' ')"
-      printf '  %-12s  %s words\n' "$date_str" "$wc" >&2
+      local bname; bname="$(basename "$f" .md)"
+      local wc_out; wc_out="$(wc -w < "$f" 2>/dev/null | tr -d ' ')"
+      # Extract readable date from filename
+      local date_part="${bname:0:8}"
+      local display_date
+      display_date="$(python3 -c \
+        "from datetime import datetime; print(datetime.strptime('${date_part}','%Y%m%d').strftime('%a %d %b %Y'))" \
+        2>/dev/null || printf '%s' "$date_part")"
+      local title_part="${bname:14}"
+      title_part="${title_part//_/ }"
+      printf '%s  %-16s  %-28s  %s words\n' \
+        "$_UI_INDENT" "$display_date" "${title_part:0:28}" "$wc_out" >&2
     done
   else
-    _ui_info "No entries yet." >&2
+    _ui_info "No entries yet."
   fi
-  printf '\n' >&2
+  _ui_blank
 }
 
 _spark_journal_new() {
-  local editor="${EDITOR:-${VISUAL:-nano}}"
+  local time_str; time_str="$(date +%Y%m%d_%H%M)"
+  local title; title="$(_ui_prompt "Title for this entry  (optional)")" || true
+  local slug=""
+  [[ -n "$title" ]] && slug="_$(_journal_slugify "$title")"
+  local journal_file="$_FLAT_JOURNAL_DIR/${time_str}${slug}.md"
   local eq_str; eq_str="$(_eq_today_short)"
-  local timestamp; timestamp="$(date +%Y%m%d_%H%M%S)"
-  local note_file="$_FLAT_JOURNAL_DIR/free_${timestamp}.md"
-  cat > "$note_file" <<TEMPLATE
-# Free Entry — $(_db_today)
-**Equicycle:** $eq_str
+  cat > "$journal_file" <<TEMPLATE
+# ${title:-Free entry}
+*$eq_str*
 
 TEMPLATE
-  "$editor" "$note_file"
-  _ui_ok "Entry saved: $note_file"
+  _journal_open_editor "$journal_file"
+  local wc_out; wc_out="$(wc -w < "$journal_file" 2>/dev/null | tr -d ' ')"
+  _ui_ok "Saved — $wc_out words  ($(basename "$journal_file"))"
 }
 
 _spark_journal_streak() {
-  # Count consecutive days with journal entries ending today
   local streak=0
-  local check_date; check_date="$(_db_today)"
+  local check_date; check_date="$(date +%Y%m%d)"
   while true; do
-    local check_file="$_FLAT_JOURNAL_DIR/${check_date}.md"
-    [[ -f "$check_file" ]] || break
+    local found; found="$(find "$_FLAT_JOURNAL_DIR" -maxdepth 1 \
+      \( -name "${check_date}_*.md" -o -name "${check_date}.md" \) \
+      2>/dev/null | grep -v '\.expanded' | grep -q '.' && echo yes || echo no)"
+    [[ "$found" == "yes" ]] || break
     (( ++streak ))
-    check_date="$(python3 -c \
-      "from datetime import date, timedelta; print(str(date.fromisoformat('$check_date') - timedelta(1)))" \
-      2>/dev/null || break)"
-    [[ $streak -ge 365 ]] && break  # safety cap
+    check_date="$(python3 -c "
+from datetime import datetime,timedelta
+d=datetime.strptime('${check_date}','%Y%m%d')-timedelta(1)
+print(d.strftime('%Y%m%d'))" 2>/dev/null)" || break
+    [[ $streak -ge 365 ]] && break
   done
   printf '%d' "$streak"
 }
-
-# ─────────────────────────────────────────────────────────────────────────────
-# NOTES
-# ─────────────────────────────────────────────────────────────────────────────
-
 _spark_note_route() {
   case "${1:-capture}" in
     list)  _spark_note_list ;;
@@ -256,7 +392,7 @@ _spark_note_route() {
 }
 
 _spark_note_capture() {
-  local title_hint="$1"
+  local title_hint="${$1:-}"
   local timestamp; timestamp="$(date +%Y%m%d_%H%M%S)"
   local editor="${EDITOR:-${VISUAL:-nano}}"
 
@@ -313,11 +449,11 @@ _spark_idea_route() {
   case "${1:-list}" in
     list)    shift; _spark_idea_list "$@" ;;
     add)     shift; _spark_idea_add "$*" ;;
-    show)    shift; _spark_idea_show "$1" ;;
-    develop) shift; _spark_idea_develop "$1" ;;
-    advance) shift; _spark_idea_advance "$1" ;;
-    export)  shift; _spark_idea_export "$1" ;;
-    archive) shift; _spark_idea_archive "$1" ;;
+    show)    shift; _spark_idea_show "${1:-}" ;;
+    develop) shift; _spark_idea_develop "${1:-}" ;;
+    advance) shift; _spark_idea_advance "${1:-}" ;;
+    export)  shift; _spark_idea_export "${1:-}" ;;
+    archive) shift; _spark_idea_archive "${1:-}" ;;
     *)       _spark_idea_list ;;
   esac
 }
@@ -356,7 +492,7 @@ _spark_idea_list() {
 }
 
 _spark_idea_add() {
-  local title="$1"
+  local title="${$1:-}"
   [[ -z "$title" ]] && title="$(_ui_prompt "Idea")"
   [[ -z "$title" ]] && { _ui_warn "No idea given." >&2; return 0; }
 
@@ -372,7 +508,7 @@ _spark_idea_add() {
 }
 
 _spark_idea_show() {
-  local id="$1"
+  local id="${$1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx spark idea show <id>" >&2; return 1; }
   awk -F'\t' -v id="$id" 'NR>1 && $1==id {
     printf "\n  ID:       %s\n", $1
@@ -385,7 +521,7 @@ _spark_idea_show() {
 }
 
 _spark_idea_develop() {
-  local id="$1"
+  local id="${$1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx spark idea develop <id>" >&2; return 1; }
   if ! _tsv_exists "$_FLAT_SPARK_IDEAS" "$id"; then
     _ui_err "Idea $id not found." >&2; return 1
@@ -429,7 +565,7 @@ DEV
 }
 
 _spark_idea_advance() {
-  local id="$1"
+  local id="${$1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx spark idea advance <id>" >&2; return 1; }
 
   local current_stage; current_stage="$(_tsv_get "$_FLAT_SPARK_IDEAS" "$id" 2)"
@@ -452,7 +588,7 @@ _spark_idea_advance() {
 }
 
 _spark_idea_export() {
-  local id="$1"
+  local id="${$1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx spark idea export <id>" >&2; return 1; }
   local title; title="$(_tsv_get "$_FLAT_SPARK_IDEAS" "$id" 5)"
 
@@ -480,7 +616,7 @@ _spark_idea_export() {
 }
 
 _spark_idea_archive() {
-  local id="$1"
+  local id="${$1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx spark idea archive <id>" >&2; return 1; }
   local title; title="$(_tsv_get "$_FLAT_SPARK_IDEAS" "$id" 5)"
   local reason; reason="$(_ui_prompt "Why archiving? (required)")"
@@ -511,11 +647,11 @@ _spark_learn_route() {
   case "${1:-list}" in
     list)        shift; _spark_learn_list "$@" ;;
     add)         _spark_learn_add ;;
-    show)        shift; _spark_learn_show "$1" ;;
-    progress)    shift; _spark_learn_progress "$1" "$2" ;;
-    highlight)   shift; _spark_learn_highlight "$1" ;;
-    done)        shift; _spark_learn_done "$1" ;;
-    synthesise|synthesize) shift; _spark_learn_synthesise "$1" ;;
+    show)        shift; _spark_learn_show "${1:-}" ;;
+    progress)    shift; _spark_learn_progress "${1:-}" "${2:-}" ;;
+    highlight)   shift; _spark_learn_highlight "${1:-}" ;;
+    done)        shift; _spark_learn_done "${1:-}" ;;
+    synthesise|synthesize) shift; _spark_learn_synthesise "${1:-}" ;;
     *)           _spark_learn_list ;;
   esac
 }
@@ -551,7 +687,7 @@ _spark_learn_add() {
   printf '\n  ADD RESOURCE\n' >&2
   _ui_hr
 
-  local title; title="$(_ui_prompt "Title")"
+  local title; title="$(_ui_prompt "Title")" || { _ui_info "Cancelled." >&2; return 0; }
   [[ -z "$title" ]] && { _ui_warn "No title." >&2; return 0; }
   local author; author="$(_ui_prompt "Author/source (optional)" "")"
   local type
@@ -571,7 +707,7 @@ _spark_learn_add() {
 }
 
 _spark_learn_show() {
-  local id="$1"
+  local id="${$1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx spark learn show <id>" >&2; return 1; }
   awk -F'\t' -v id="$id" 'NR>1 && $1==id {
     printf "\n  %-12s  %s\n", "ID:", $1
@@ -592,7 +728,7 @@ _spark_learn_show() {
 }
 
 _spark_learn_progress() {
-  local id="$1" pct="$2"
+  local id="${$1:-}" pct="${2:-}"
   [[ -z "$id" || -z "$pct" ]] && {
     _ui_err "Usage: sconlx spark learn progress <id> <percentage>" >&2; return 1
   }
@@ -604,7 +740,7 @@ _spark_learn_progress() {
 }
 
 _spark_learn_highlight() {
-  local id="$1"
+  local id="${$1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx spark learn highlight <id>" >&2; return 1; }
   local hl_file="$_FLAT_SPARK_DIR/learn_${id}_highlights.md"
   [[ ! -f "$hl_file" ]] && printf '# Highlights\n\n' > "$hl_file"
@@ -618,7 +754,7 @@ _spark_learn_highlight() {
 }
 
 _spark_learn_done() {
-  local id="$1"
+  local id="${$1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx spark learn done <id>" >&2; return 1; }
   _tsv_update_field "$_FLAT_SPARK_LEARNING" "$id" 4 "completed"
   _tsv_update_field "$_FLAT_SPARK_LEARNING" "$id" 5 "100"
@@ -630,7 +766,7 @@ _spark_learn_done() {
 }
 
 _spark_learn_synthesise() {
-  local id="$1"
+  local id="${$1:-}"
   [[ -z "$id" ]] && { _ui_err "Usage: sconlx spark learn synthesise <id>" >&2; return 1; }
   local title; title="$(_tsv_get "$_FLAT_SPARK_LEARNING" "$id" 2)"
   local editor="${EDITOR:-${VISUAL:-nano}}"
@@ -671,10 +807,10 @@ SYN
 _spark_dia_route() {
   case "${1:-list}" in
     list)    _spark_dia_list ;;
-    show)    shift; _spark_dia_show "$1" ;;
+    show)    shift; _spark_dia_show "${1:-}" ;;
     overdue) _spark_dia_overdue ;;
     add)     _spark_dia_add ;;
-    log)     shift; _spark_dia_log "$1" ;;
+    log)     shift; _spark_dia_log "${1:-}" ;;
     *)       _spark_dia_list ;;
   esac
 }
@@ -703,7 +839,7 @@ _spark_dia_list() {
 }
 
 _spark_dia_show() {
-  local query="$1"
+  local query="${$1:-}"
   [[ -z "$query" ]] && { _ui_err "Usage: sconlx spark dia show <name|id>" >&2; return 1; }
   awk -F'\t' -v q="${query,,}" '
     NR>1 && (tolower($1)==q || tolower($2)~q) {
@@ -758,7 +894,7 @@ _spark_dia_add() {
 }
 
 _spark_dia_log() {
-  local query="$1"
+  local query="${$1:-}"
   [[ -z "$query" ]] && { _ui_err "Usage: sconlx spark dia log <name|id>" >&2; return 1; }
 
   local row

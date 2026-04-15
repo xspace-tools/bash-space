@@ -169,7 +169,7 @@ init_tsv() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 echo ""
-echo "  XSpace installer v0.8.0"
+echo "  XSpace installer v0.9.0"
 echo "  root : $XSPACE_ROOT"
 echo "  bin  : $USER_BIN"
 echo "  rc   : $SHELL_RC"
@@ -449,6 +449,29 @@ if [[ ! -f "$ABS_SC_DATA/tasks.tsv" ]]; then
     ok "Initialized legacy tasks.tsv (v1.0.0 compatibility)"
 else
     ok "Legacy tasks.tsv present"
+fi
+
+# ── Calendar data init ──
+CALENDAR_JSON="$ABS_SC_DATA/calendar.json"
+if [[ ! -f "$CALENDAR_JSON" ]]; then
+    cat > "$CALENDAR_JSON" << 'JSON'
+{
+  "_comment": "sconl-space/data/calendar.json — personal calendar data. Edit directly or: sconlx cal edit",
+  "birthdays": [],
+  "custom_events": [],
+  "settings": {
+    "upcoming_days_ahead": 30,
+    "birthday_warn_days": 7,
+    "show_holidays": true,
+    "holiday_regions": ["KE", "INT"],
+    "show_today_in_history": true,
+    "history_facts_per_day": 3
+  }
+}
+JSON
+    ok "Initialized calendar.json"
+else
+    ok "calendar.json present"
 fi
 
 # ── Equicycle engine check ──
