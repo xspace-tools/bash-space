@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# _configure/uninstall.sh
+# _configure/lib/uninstall.sh
 #
-# Removes everything _configure/install.sh put onto the system.
+# Removes everything _configure/lib/install.sh put onto the system.
 # Safe even if install was only partially completed.
 #
 # Removes: ~/bin symlinks for all space scripts, PATH lines for all
@@ -14,16 +14,19 @@
 #                 logs, or backup-space/config/backups.conf.
 #
 # Usage:
-#   cd xspace/_configure && ./uninstall.sh
-
+#   _configure/lib/uninstall.sh
+#
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
+#   v0.5.0 — Moved to _configure/lib/. Bootstrap updated: _LIB_DIR / _X_DIR /
+#             XSPACE_ROOT now resolved correctly from the lib/ subdirectory.
+#             Portable _readlink_f added (matches install.sh / update.sh).
 #   v0.4.0 — Completion removal updated for v0.6.0 symlink pattern.
 #             Removes the new _xsp=... RC line, the ~/.local/share/xspace/
 #             symlink, and any old absolute-path lines from v0.5.0 (backward
 #             compat). All three patterns cleaned in one pass.
-#   v0.3.0 — Folder renamed x-space/ → _configure/. Path comment and
+#   v0.3.0 — Folder renamed x-space/ -> _configure/. Path comment and
 #             marker path updated. No other changes.
 #   v0.2.0 — Loops XSPACE_ALL_BIN_DIRS; _X_DIR fix.
 #   v0.1.0 — Initial release.
@@ -36,7 +39,20 @@ IFS=$'\n\t'
 # BOOTSTRAP
 # ─────────────────────────────────────────────────────────────────────────────
 
-_X_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+_readlink_f() {
+    local target="$1"
+    if readlink -f "$target" &>/dev/null 2>&1; then
+        readlink -f "$target"; return
+    fi
+    if command -v greadlink &>/dev/null; then
+        greadlink -f "$target"; return
+    fi
+    local dir; dir="$(cd "$(dirname "$target")" 2>/dev/null && pwd -P)"
+    echo "${dir}/$(basename "$target")"
+}
+
+_LIB_DIR="$(cd "$(dirname "$(_readlink_f "${BASH_SOURCE[0]}")")" && pwd)"
+_X_DIR="$(cd "$_LIB_DIR/.." && pwd)"
 XSPACE_ROOT="$(cd "$_X_DIR/.." && pwd)"
 
 CONF="$XSPACE_ROOT/xspace.conf"
@@ -58,9 +74,9 @@ COMP_SYMLINK="$XSPACE_SHARE/gitspace-completion.sh"
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-ok()   { echo "  ✓ $*"; }
-warn() { echo "  ⚠  $*"; }
-hr()   { echo ""; echo "  ── $* ──────────────────────────────────────────────────"; }
+ok()   { echo "  + $*"; }
+warn() { echo "  ! $*"; }
+hr()   { echo ""; echo "  -- $* ---------------------------------------------------"; }
 
 remove_line_from_rc() {
     local rc="$1" line="$2" label="$3"
@@ -93,7 +109,7 @@ remove_pattern_from_rc() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 echo ""
-echo "  XSpace uninstaller v0.4.0"
+echo "  XSpace uninstaller v0.5.0"
 echo "  root    : $XSPACE_ROOT"
 echo "  removes : ~/bin symlinks, PATH lines, RC entries, completion"
 echo "            symlink (~/.local/share/xspace/), installed marker"
@@ -129,7 +145,7 @@ for rel_bin in "${XSPACE_ALL_BIN_DIRS[@]}"; do
             target="$USER_BIN/$name"
             if [[ -L "$target" ]] && [[ "$(readlink "$target")" == "$f" ]]; then
                 rm "$target"
-                (( ++removed ))
+                (( ++removed )) || true
             fi
         done
         ok "${rel_bin} — removed $removed symlink(s)"
@@ -148,8 +164,9 @@ remove_line_from_rc "$SHELL_RC" "$SAFE_ADD" "~/bin on PATH"
 COMP_LINE_V6='_xsp="$HOME/.local/share/xspace/gitspace-completion.sh"; [[ -f "$_xsp" ]] && source "$_xsp"; unset _xsp'
 remove_line_from_rc "$SHELL_RC" "$COMP_LINE_V6" "gitspace completion (v0.6.0 symlink line)"
 
-# v0.5.0 and earlier — absolute path style. Use pattern match (path varies by machine).
-remove_pattern_from_rc "$SHELL_RC" "gitspace-completion.sh" "gitspace completion (old absolute-path style)"
+# v0.5.0 and earlier — absolute path style (path varies by machine)
+remove_pattern_from_rc "$SHELL_RC" "gitspace-completion.sh" \
+    "gitspace completion (old absolute-path style)"
 
 # Pre-rename cleanup — stale x-space/bin PATH lines
 remove_pattern_from_rc "$SHELL_RC" "x-space/bin" "stale x-space/bin PATH lines"
@@ -185,8 +202,11 @@ else
 fi
 
 echo ""
-echo "  ── Uninstall complete ────────────────────────────────────────"
+echo "  -- Uninstall complete ----------------------------------------"
 echo ""
 echo "  Open a new terminal or: source ~/$( basename "$SHELL_RC" )"
-echo "  Re-install: cd $XSPACE_ROOT/_configure && ./install.sh"
+echo "  Re-install: installx"
+echo ""
+echo "  Press Enter to close..."
+read -r _
 echo ""

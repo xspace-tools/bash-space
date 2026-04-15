@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# _configure/bin/installx
+#
+# Re-runs the XSpace installer from anywhere.
+# Resolves install.sh location via this script's own real path —
+# works even when the repo is moved or accessed via symlink.
+#
+# Usage:
+#   installx               run installer (waits for Enter at end)
+#   installx --no-pause    run installer non-interactively
+#   installx --help        show installer help
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────────────────────────────────────────
+#   v1.0.0 — Initial release. Resolves install.sh via BASH_SOURCE[0] real
+#             path: symlink -> _configure/bin/installx -> ../../lib/install.sh.
+#             Passes all arguments through to install.sh unchanged.
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RESOLVE OWN REAL PATH (symlink-safe; works on Linux, macOS, Git Bash)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_readlink_f() {
+    local target="$1"
+    if readlink -f "$target" &>/dev/null 2>&1; then
+        readlink -f "$target"; return
+    fi
+    if command -v greadlink &>/dev/null; then
+        greadlink -f "$target"; return
+    fi
+    # Pure bash fallback
+    local dir; dir="$(cd "$(dirname "$target")" 2>/dev/null && pwd -P)"
+    echo "${dir}/$(basename "$target")"
+}
+
+# This script is at: _configure/bin/installx
+# install.sh is at:  _configure/lib/install.sh
+_SELF_REAL="$(_readlink_f "${BASH_SOURCE[0]}")"
+_BIN_DIR="$(cd "$(dirname "$_SELF_REAL")" && pwd)"     # _configure/bin/
+_LIB_DIR="$(cd "$_BIN_DIR/../lib" 2>/dev/null && pwd)" # _configure/lib/
+_INSTALL_SH="$_LIB_DIR/install.sh"
+
+if [[ ! -f "$_INSTALL_SH" ]]; then
+    echo ""
+    echo "  x  install.sh not found at $_INSTALL_SH"
+    echo "  Expected: _configure/lib/install.sh  (relative to installx real path)"
+    echo "  installx real path: $_SELF_REAL"
+    echo ""
+    exit 1
+fi
+
+# Pass all arguments through unchanged.
+# install.sh handles --no-pause, --help, etc.
+exec "$_INSTALL_SH" "$@"
