@@ -4,7 +4,7 @@
 # Interactive backup orchestrator with archive-sync behaviour.
 # Reads job definitions from backup-space/config/backups.conf.
 #
-# Archive-sync: pushes local → dest. Files deleted locally are moved to
+# Archive-sync: pushes local -> dest. Files deleted locally are moved to
 # dest/_archivex/YYYYMMDD/filename — never silently deleted.
 #
 # Supported methods : rclone | rsync | tar
@@ -13,6 +13,16 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
+#   v0.4.2 — UI: all non-ASCII symbols removed from output helpers (_ok, _info,
+#             _warn, _err) and inline echo calls. Replaced with plain ASCII
+#             indicators: + (ok), > (info), ! (warn), x (err). _select_jobs
+#             rewritten: space-level group shortcuts (letter keys A-Z) added
+#             above the individual job list. Default changed from "run all" to
+#             Unit Spaces (press Enter with no input); run all still available
+#             via [0]. Hierarchy level labels renamed: Meta -> Meta Spaces,
+#             High -> Canonical Spaces, Mid -> Identity Spaces, Low -> Domain
+#             Spaces, Leaf -> Unit Spaces. backups.conf ## headers updated to
+#             match. _migrate_logs echo updated to plain ASCII arrows.
 #   v0.4.1 — Bug fix: _migrate_logs() returned non-zero (exit code 1) when no
 #             flat logs existed to migrate, because the final statement
 #             `(( migrated > 0 )) && echo "..."` evaluates to exit code 1 when
@@ -24,15 +34,10 @@
 #   v0.4.0 — Date-folder archives: _archivex/YYYYMMDD/filename (was YYYYMMDD_filename).
 #             Date-folder logs: logs/YYYYMMDD/backupx_name.log.
 #             _migrate_logs() migrates existing flat logs on startup.
-#             rclone archive-sync now uses --backup-dir + --track-renames:
-#               --backup-dir handles deleted files natively (moved to archive dir)
-#               --track-renames detects renamed files → server-side rename, NOT archive
-#             Smart --init: if local folder exists, syncs (updates) instead of
-#               fresh copy. Avoids re-downloading already-present folders.
-#             Hierarchical job display: level labels (◈ Meta / ▲ High / ● Mid /
-#               ○ Low / · Leaf) shown in group headers. Quit option [q] added
-#               to job selection. Existing logs migrated to date-folder structure.
-#   v0.3.1 — Fixed IFS word-splitting bug. RCLONE_REMOTE → onedrive-sconl.
+#             rclone archive-sync now uses --backup-dir + --track-renames.
+#             Smart --init: if local folder exists, syncs instead of fresh copy.
+#             Hierarchical job display: level labels in group headers. Quit [q].
+#   v0.3.1 — Fixed IFS word-splitting bug. RCLONE_REMOTE -> onedrive-sconl.
 #   v0.3.0 — Full interactive rewrite. Archive-sync. --init. Auth self-healing.
 #   v0.2.0 — Moved to backup-space/bin/. Fixed conf path.
 #   v0.1.0 — Initial release.
@@ -64,10 +69,10 @@ XSPACE_ROOT="$(cd "$SPACE_DIR/.." && pwd)"
 
 _detect_os() {
   case "$(uname -s 2>/dev/null)" in
-    Linux*)           echo "linux"   ;;
-    Darwin*)          echo "mac"     ;;
+    Linux*)               echo "linux"   ;;
+    Darwin*)              echo "mac"     ;;
     MINGW*|MSYS*|CYGWIN*) echo "windows" ;;
-    *)                echo "unknown" ;;
+    *)                    echo "unknown" ;;
   esac
 }
 OS="$(_detect_os)"
@@ -96,7 +101,7 @@ esac
 mkdir -p "$LOG_DIR"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LOG MIGRATION — move flat YYYYMMDD_name.log → YYYYMMDD/name.log
+# LOG MIGRATION — move flat YYYYMMDD_name.log -> YYYYMMDD/name.log
 # ─────────────────────────────────────────────────────────────────────────────
 # Defined here, called AFTER colors are set up (below).
 
@@ -113,8 +118,7 @@ _migrate_logs() {
     mv "$f" "$dest_dir/$name_part"
     (( ++migrated )) || true
   done
-  # echo only — _info not yet defined when this is defined; called after colors
-  (( migrated > 0 )) && echo "  →  Migrated ${migrated} log(s) → date-folder structure"
+  (( migrated > 0 )) && echo "  ->  Migrated ${migrated} log(s) -> date-folder structure"
   return 0
 }
 
@@ -131,10 +135,10 @@ else
   R='' BOLD='' DIM='' GRN='' YLW='' BLU='' CYN='' RED='' WHT='' GRY='' MGT=''
 fi
 
-_ok()   { echo -e "  ${GRN}✓${R}  $*"; }
-_info() { echo -e "  ${BLU}→${R}  $*"; }
-_warn() { echo -e "  ${YLW}⚠${R}   $*"; }
-_err()  { echo -e "  ${RED}✗${R}  $*" >&2; }
+_ok()   { echo -e "  ${GRN}+${R}    $*"; }
+_info() { echo -e "  ${BLU}>${R}    $*"; }
+_warn() { echo -e "  ${YLW}!${R}    $*"; }
+_err()  { echo -e "  ${RED}x${R}    $*" >&2; }
 _dim()  { echo -e "     ${GRY}$*${R}"; }
 _hr()   { echo -e "\n  ${DIM}────────────────────────────────────────────────────────${R}"; }
 
@@ -147,7 +151,7 @@ _migrate_logs || true
 
 _banner() {
   local ts
-  ts="$(date +'%B %d, %Y · %I:%M %p')"
+  ts="$(date +'%B %d, %Y  %I:%M %p')"
   echo ""
   echo -e "  ${BOLD}${WHT}backupx${R}${GRY} — xspace backup orchestrator${R}"
   echo -e "  ${DIM}${ts}${R}"
@@ -186,7 +190,7 @@ while [[ $# -gt 0 ]]; do
     backupx --help
 
   ARCHIVE-SYNC BEHAVIOUR
-    Local is always the source of truth. Backups push local → destination.
+    Local is always the source of truth. Backups push local -> destination.
     Files deleted locally are NOT removed at the destination — they are
     moved into  dest/_archivex/YYYYMMDD/filename  instead.
     The _archivex folder is created automatically and lives only at the
@@ -197,7 +201,7 @@ while [[ $# -gt 0 ]]; do
     Format: name|method|source|dest|options
 
     {LOCAL_BASE}    expands to OS-appropriate synced-files base directory
-                    Linux/macOS → ~/_ · Windows → ~/Desktop/_
+                    Linux/macOS -> ~/_ · Windows -> ~/Desktop/_
     {RCLONE_REMOTE} expands to the RCLONE_REMOTE value set in this script
 
   RCLONE REMOTE
@@ -209,6 +213,15 @@ while [[ $# -gt 0 ]]; do
     1.  rclone config              # authenticate OneDrive
     2.  backupx --init             # pull all remote folders to local
     3.  backupx                    # run backups going forward
+
+  SPACE LEVELS (press Enter to run the default: Unit Spaces)
+    Unit Spaces      individual role/project folders  (default)
+    Domain Spaces    department-level folders
+    Identity Spaces  pillar-level folders
+    Canonical Spaces major Core section folders
+    Meta Spaces      top-level root folders
+
+    Choose ONE level per run. Syncing a parent AND its children is redundant.
 
   LOGS
     backup-space/logs/YYYYMMDD/backupx_<name>.log
@@ -317,7 +330,6 @@ _display_jobs() {
     local group="${JOB_GROUPS[$i]}"
     local name="${JOB_NAMES[$i]}"
     local method="${JOB_METHODS[$i]}"
-    local source="${JOB_SOURCES[$i]}"
     local dest="${JOB_DESTS[$i]}"
 
     if [[ "$group" != "$prev_group" ]]; then
@@ -343,19 +355,67 @@ _select_jobs() {
   echo -e "  ${BOLD}Which backups would you like to run?${R}"
   _hr
 
-  echo ""
-  echo -e "  ${GRN}[ 0]${R}  ${BOLD}Run all${R}  ${DIM}(default — just press Enter)${R}"
+  # ── Build ordered unique group list ──────────────────────────────────────
+  local groups=()
+  local g
+  for g in "${JOB_GROUPS[@]}"; do
+    local found=false
+    local existing
+    for existing in "${groups[@]+"${groups[@]}"}"; do
+      [[ "$existing" == "$g" ]] && found=true && break
+    done
+    [[ "$found" == false ]] && groups+=("$g")
+  done
 
+  # ── Assign letter keys A, B, C ... to groups ─────────────────────────────
+  local letters=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M"
+                 "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z")
+  local default_group="Unit Spaces"
+  local default_letter=""
+
+  echo ""
+  echo -e "  ${BOLD}By space level:${R}"
+  echo ""
+
+  local i
+  for (( i=0; i<${#groups[@]}; i++ )); do
+    local letter="${letters[$i]}"
+    local grp="${groups[$i]}"
+
+    # Count jobs in this group
+    local count=0
+    local j
+    for (( j=0; j<total; j++ )); do
+      [[ "${JOB_GROUPS[$j]}" == "$grp" ]] && (( ++count )) || true
+    done
+
+    if [[ "$grp" == "$default_group" ]]; then
+      default_letter="$letter"
+      printf "  ${CYN}[%s]${R}  ${WHT}%-22s${R}  ${GRY}%d job(s)${R}  ${GRN}(default)${R}\n" \
+        "$letter" "$grp" "$count"
+    else
+      printf "  ${CYN}[%s]${R}  ${WHT}%-22s${R}  ${GRY}%d job(s)${R}\n" \
+        "$letter" "$grp" "$count"
+    fi
+  done
+
+  echo ""
+  printf "  ${CYN}[0]${R}  ${WHT}%-22s${R}  ${GRY}%d job(s)${R}\n" "Run all" "$total"
+
+  # ── Individual job list ───────────────────────────────────────────────────
+  echo ""
+  echo -e "  ${DIM}Individual jobs:${R}"
   _display_jobs
 
   echo ""
   _hr
   echo ""
-  echo -e "  ${GRY}Enter numbers separated by spaces (e.g. ${WHT}1 3 5${R}${GRY}),"
-  echo -e "  press ${WHT}Enter${R}${GRY} or type ${WHT}0${R}${GRY} to run everything,"
-  echo -e "  or type ${WHT}q${R}${GRY} to quit.${R}"
+  echo -e "  ${GRY}Enter a space level  ${WHT}(A B C ...)${R}${GRY},"
+  echo -e "  ${GRY}job number(s)        ${WHT}(1 3 5)${R}${GRY},"
+  echo -e "  ${GRY}${WHT}0${R}${GRY} to run all, or ${WHT}q${R}${GRY} to quit.${R}"
+  echo -e "  ${GRY}Press Enter for default: ${WHT}${default_group}${R}${GRY}.${R}"
   echo ""
-  printf "  ${CYN}›${R} "
+  printf "  ${CYN}>${R} "
 
   local input
   read -r input
@@ -368,12 +428,43 @@ _select_jobs() {
     exit 0
   fi
 
-  # Default / all
-  if [[ -z "$input" || "$input" == "0" ]]; then
+  # Default — Unit Spaces (press Enter with no input)
+  if [[ -z "$input" ]]; then
+    SELECTED_JOBS=()
+    local k
+    for (( k=0; k<total; k++ )); do
+      [[ "${JOB_GROUPS[$k]}" == "$default_group" ]] && SELECTED_JOBS+=("$k")
+    done
+    if (( ${#SELECTED_JOBS[@]} > 0 )); then
+      _info "Selected: ${default_group}  (${#SELECTED_JOBS[@]} jobs)"
+    else
+      _warn "'${default_group}' group not found in conf — running all jobs."
+      SELECTED_JOBS=()
+    fi
+    return
+  fi
+
+  # Run all
+  if [[ "$input" == "0" ]]; then
     SELECTED_JOBS=()
     return
   fi
 
+  # Single letter — group selection
+  local input_upper="${input^^}"
+  for (( i=0; i<${#groups[@]}; i++ )); do
+    if [[ "$input_upper" == "${letters[$i]}" ]]; then
+      SELECTED_JOBS=()
+      local k
+      for (( k=0; k<total; k++ )); do
+        [[ "${JOB_GROUPS[$k]}" == "${groups[$i]}" ]] && SELECTED_JOBS+=("$k")
+      done
+      _info "Selected: ${groups[$i]}  (${#SELECTED_JOBS[@]} jobs)"
+      return
+    fi
+  done
+
+  # Numbers — individual jobs
   local selected=()
   for token in $input; do
     if [[ "$token" =~ ^[0-9]+$ ]] && (( token > 0 && token <= total )); then
@@ -404,7 +495,7 @@ _check_rclone_auth() {
     return 1
   fi
 
-  # ── Remote not configured → offer to run rclone config now ───────────────
+  # Remote not configured — offer to run rclone config now
   if ! rclone listremotes 2>/dev/null | grep -qF "${RCLONE_REMOTE}:"; then
     _err "rclone remote '${RCLONE_REMOTE}' is not configured."
     echo ""
@@ -417,7 +508,6 @@ _check_rclone_auth() {
       echo ""
       rclone config
       echo ""
-      # Re-check after config completes
       if rclone listremotes 2>/dev/null | grep -qF "${RCLONE_REMOTE}:"; then
         _ok "Remote '${RCLONE_REMOTE}' configured."
       else
@@ -429,7 +519,7 @@ _check_rclone_auth() {
     fi
   fi
 
-  # ── Token expired → offer to reconnect ───────────────────────────────────
+  # Token expired — offer to reconnect
   _info "Verifying OneDrive connection..."
   if ! rclone lsd "${RCLONE_REMOTE}:" --max-depth=1 &>/dev/null; then
     _err "Cannot reach '${RCLONE_REMOTE}:' — token may have expired."
@@ -454,7 +544,7 @@ _check_rclone_auth() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# INITIAL SETUP (--init): remote → local first pull
+# INITIAL SETUP (--init): remote -> local first pull
 # ─────────────────────────────────────────────────────────────────────────────
 
 _init_setup() {
@@ -481,7 +571,7 @@ _init_setup() {
 
     echo ""
     echo -e "  ${BOLD}${WHT}${name}${R}"
-    echo -e "  ${GRY}remote → ${CYN}${source}${R}"
+    echo -e "  ${GRY}remote -> ${CYN}${source}${R}"
 
     if [[ "$DRY_RUN" == true ]]; then
       if [[ -d "$source" ]]; then
@@ -527,11 +617,11 @@ _init_setup() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ARCHIVE-SYNC: RCLONE (local → cloud)
+# ARCHIVE-SYNC: RCLONE (local -> cloud)
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. Find files in dest that do not exist in source (deletions).
 # 2. Move each to dest/_archivex/YYYYMMDD/filename.
-# 3. Sync source → dest (excluding _archivex/).
+# 3. Sync source -> dest (excluding _archivex/).
 
 _archive_sync_rclone() {
   local name="$1" source="$2" dest="$3" options="$4" log_file="$5"
@@ -543,8 +633,8 @@ _archive_sync_rclone() {
   # Archive dir: dest/_archivex/YYYYMMDD/ — created by rclone automatically
   local archive_dir="${dest}/${ARCHIVEX_DIR}/${DATE_PREFIX}"
 
-  _info "Syncing → ${dest}"
-  _dim "Deletions archived → ${ARCHIVEX_DIR}/${DATE_PREFIX}/"
+  _info "Syncing -> ${dest}"
+  _dim "Deletions archived -> ${ARCHIVEX_DIR}/${DATE_PREFIX}/"
   _dim "Renames tracked server-side (no archive for renamed files)"
 
   if [[ "$DRY_RUN" == true ]]; then
@@ -564,7 +654,7 @@ _archive_sync_rclone() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ARCHIVE-SYNC: RSYNC (local → local or local → SSH)
+# ARCHIVE-SYNC: RSYNC (local -> local or local -> SSH)
 # ─────────────────────────────────────────────────────────────────────────────
 # Uses rsync --dry-run to identify deletions first, moves them to _archivex/,
 # then syncs. This avoids rsync ever actually deleting anything.
@@ -579,7 +669,7 @@ _archive_sync_rsync() {
 
   mkdir -p "$dest" "$archive_dir"
 
-  # ── Step 1: detect deletions ─────────────────────────────────────────────
+  # Step 1: detect deletions
   _dim "Scanning for destination-only items..."
 
   local to_archive
@@ -589,14 +679,14 @@ _archive_sync_rsync() {
     "${source}/" "${dest}/" 2>>"$log_file" \
     | awk '/^deleting / { sub(/^deleting /, ""); print }' || true)"
 
-  # ── Step 2: move to archive ──────────────────────────────────────────────
+  # Step 2: move to archive
   if [[ -n "$to_archive" ]]; then
     local count=0
     while IFS= read -r item; do
       [[ -z "$item" ]] && continue
       local bname="${item##*/}"
       local archived="${DATE_PREFIX}_${bname}"
-      _dim "archiving → ${ARCHIVEX_DIR}/${archived}  (was: ${item})"
+      _dim "archiving -> ${ARCHIVEX_DIR}/${archived}  (was: ${item})"
       if [[ "$DRY_RUN" != true ]]; then
         if [[ -e "${dest}/${item}" ]]; then
           mv "${dest}/${item}" "${archive_dir}/${archived}"
@@ -609,11 +699,11 @@ _archive_sync_rsync() {
     _dim "No deletions detected."
   fi
 
-  # ── Step 3: sync (safe — nothing left to delete) ─────────────────────────
-  _info "Syncing → ${dest}"
+  # Step 3: sync (safe — nothing left to delete)
+  _info "Syncing -> ${dest}"
 
   if [[ "$DRY_RUN" == true ]]; then
-    _dim "[dry-run] rsync $source → $dest"
+    _dim "[dry-run] rsync $source -> $dest"
     return 0
   fi
 
@@ -645,13 +735,13 @@ _run_tar() {
   # Archive the previous version before overwriting
   if [[ -f "$dest" ]]; then
     local archived="${DATE_PREFIX}_${dest_base}"
-    _dim "archiving previous → ${ARCHIVEX_DIR}/${archived}"
+    _dim "archiving previous -> ${ARCHIVEX_DIR}/${archived}"
     if [[ "$DRY_RUN" != true ]]; then
       mv "$dest" "${archive_dir}/${archived}"
     fi
   fi
 
-  _info "Creating archive → ${dest}"
+  _info "Creating archive -> ${dest}"
 
   if [[ "$DRY_RUN" == true ]]; then
     _dim "[dry-run] tar czf $dest $source"
@@ -679,7 +769,7 @@ _run_job() {
   echo ""
   echo -e "  ${BOLD}${WHT}${name}${R}  ${GRY}(${method})${R}"
   echo -e "  ${GRY}${source}${R}"
-  echo -e "  ${GRY}→ ${CYN}${dest}${R}"
+  echo -e "  ${GRY}-> ${CYN}${dest}${R}"
 
   local job_ok=true
 
@@ -708,10 +798,10 @@ _run_job() {
   esac
 
   if [[ "$job_ok" == true ]]; then
-    _ok "Done  ${GRY}→ log: ${LOG_DIR}/${DATE_PREFIX}/$(basename "$log_file")${R}"
+    _ok "Done  ${GRY}-> log: ${LOG_DIR}/${DATE_PREFIX}/$(basename "$log_file")${R}"
     return 0
   else
-    _err "Failed  ${GRY}→ log: ${LOG_DIR}/${DATE_PREFIX}/$(basename "$log_file")${R}"
+    _err "Failed  ${GRY}-> log: ${LOG_DIR}/${DATE_PREFIX}/$(basename "$log_file")${R}"
     return 1
   fi
 }
@@ -741,7 +831,7 @@ _check_needs_init() {
   _warn "${#missing_names[@]} local folder(s) have not been pulled yet:"
   local i
   for (( i=0; i<${#missing_names[@]}; i++ )); do
-    echo -e "     ${GRY}· ${WHT}${missing_names[$i]}${R}  ${GRY}→ ${missing_paths[$i]}${R}"
+    echo -e "     ${GRY}  ${WHT}${missing_names[$i]}${R}  ${GRY}-> ${missing_paths[$i]}${R}"
   done
   echo ""
   echo -e "  ${GRY}Run ${CYN}backupx --init${R}${GRY} to pull them from OneDrive first,${R}"
@@ -778,7 +868,7 @@ if (( total_jobs == 0 )); then
   exit 1
 fi
 
-# ── --list mode ───────────────────────────────────────────────────────────────
+# ── --list mode ────────────────────────────────────────────────────────────────
 
 if [[ "$LIST_ONLY" == true ]]; then
   _banner
@@ -789,14 +879,14 @@ if [[ "$LIST_ONLY" == true ]]; then
   exit 0
 fi
 
-# ── --init mode ───────────────────────────────────────────────────────────────
+# ── --init mode ────────────────────────────────────────────────────────────────
 
 if [[ "$DO_INIT" == true ]]; then
   _init_setup
   exit 0
 fi
 
-# ── Interactive job selection ─────────────────────────────────────────────────
+# ── Interactive job selection ──────────────────────────────────────────────────
 
 _select_jobs
 
@@ -815,11 +905,11 @@ if (( ${#run_indices[@]} == 0 )); then
   exit 0
 fi
 
-# ── Init gate — prompt if any local source dirs are missing ──────────────────
+# ── Init gate — prompt if any local source dirs are missing ────────────────────
 
 _check_needs_init "${run_indices[@]}"
 
-# ── Auth check for any rclone jobs ────────────────────────────────────────────
+# ── Auth check for any rclone jobs ─────────────────────────────────────────────
 
 needs_rclone=false
 for idx in "${run_indices[@]}"; do
@@ -830,14 +920,14 @@ if [[ "$needs_rclone" == true ]]; then
   _check_rclone_auth || exit 1
 fi
 
-# ── Dry-run notice ────────────────────────────────────────────────────────────
+# ── Dry-run notice ─────────────────────────────────────────────────────────────
 
 if [[ "$DRY_RUN" == true ]]; then
   echo ""
   echo -e "  ${YLW}DRY RUN — no files will be moved or synced${R}"
 fi
 
-# ── Run ───────────────────────────────────────────────────────────────────────
+# ── Run ────────────────────────────────────────────────────────────────────────
 
 echo ""
 _hr
@@ -866,16 +956,16 @@ else
   done
 fi
 
-# ── Summary ───────────────────────────────────────────────────────────────────
+# ── Summary ────────────────────────────────────────────────────────────────────
 
 echo ""
 _hr
 echo ""
 echo -e "  ${BOLD}Summary${R}"
 echo ""
-(( succeeded > 0 )) && echo -e "  ${GRN}✓${R}  ${succeeded} succeeded"
-(( failed    > 0 )) && echo -e "  ${RED}✗${R}  ${failed} failed"
-(( skipped   > 0 )) && echo -e "  ${YLW}⚠${R}   ${skipped} skipped"
+(( succeeded > 0 )) && echo -e "  ${GRN}+${R}    ${succeeded} succeeded"
+(( failed    > 0 )) && echo -e "  ${RED}x${R}    ${failed} failed"
+(( skipped   > 0 )) && echo -e "  ${YLW}!${R}    ${skipped} skipped"
 
 if [[ "$DRY_RUN" == true ]]; then
   echo ""
