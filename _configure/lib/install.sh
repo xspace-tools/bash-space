@@ -12,43 +12,36 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGELOG
 # ─────────────────────────────────────────────────────────────────────────────
-#   v1.0.0 — Moved to _configure/lib/ (bootstrap updated: _LIB_DIR / _X_DIR
-#             / XSPACE_ROOT now properly resolved from the new location).
-#             Windows support: OS detection (_detect_os), portable _readlink_f,
-#             OS-aware package-manager hints for all install suggestions,
-#             Windows-safe python/pip detection, virsh/virt-viewer skipped on
-#             Windows with a note. WSL2 detected and treated as Linux.
-#             Change tracking: every idempotent helper now records new / updated
-#             / existing outcomes into arrays (_CHG_NEW / _CHG_UPDATED /
-#             _CHG_WARNED / _CHG_EXISTING). Summary section printed before the
-#             final "Complete" block shows exactly what changed vs what was
-#             already present. --no-pause flag added; without it the script
-#             waits for Enter before exiting (supports "Run as Program" in
-#             GNOME Files and other GUI launchers).
-#   v0.9.0 — (internal: header updated; _configure/lib/ migration prep)
-#   v0.8.0 — sconl-space expanded for full iSconl suite. Step 1 creates the
-#             complete directory tree: scope/, space/, spark/, reflections/,
-#             journal/, notes/ under sconl-space/data/. Step 9 initializes
-#             all iSconl flat-file TSV headers. ISCONL_DATA_DIR created for
-#             future SQLite mode. Stale PATH cleanup extended for all spaces.
-#             xspace.conf stale entry patterns updated for sconl-space/bin.
-#   v0.7.1 — Critical fix: PATH_LINE now writes \$PATH (escaped) so the guard
-#             in .bashrc references $PATH at shell startup, not at install time.
-#             Step 3 strips stale PATH entries for all space bin dirs.
-#   v0.7.0 — sconl-space added. serverx/creatorx wired. sconl-space data init.
+#   v1.1.0 — isconl-space rename: all ABS_SCONLSPACE* vars renamed to
+#             ABS_ISCONLSPACE*. Stale PATH cleanup now also strips old
+#             sconl-space/bin entries. STEP 5 space validation updated:
+#             code-space removed (folder deleted); isconl-space checked.
+#             STEP 10 label updated to isconl-space. calendar.json comment
+#             updated from sconlx to isconl. Complete section commands
+#             updated: sconlx -> isconl, iscope/ispace/ispark entries added.
+#             STEP 11 added: Flutter / Dart / Firebase tooling check.
+#             Detects flutter, dart, firebase, flutterfire; checks for pub
+#             global outdated packages; advises on missing tools without
+#             auto-installing anything (tooling installs are opt-in via
+#             updatex --flutter).
+#   v1.0.0 — Moved to _configure/lib/. Windows support. Change tracking.
+#             Summary section. --no-pause flag.
+#   v0.8.0 — sconl-space expanded for full iSconl suite.
+#   v0.7.1 — Critical fix: PATH_LINE now writes \$PATH (escaped).
+#   v0.7.0 — sconl-space added. serverx/creatorx wired.
 #   v0.6.0 — Step 4 rewritten: gitspace completion via stable symlink.
-#   v0.5.0 — x-space -> _configure rename. Pure orchestrator.
+#   v0.5.0 — x-space -> _configure rename.
 #   v0.4.0 — animate-space/bin and lib. sys-space and backup-space scaffolded.
 #   v0.3.0 — CONF path fixed. animate-svg dirs added.
 #   v0.2.0 — bash-space -> x-space.
-#   v0.1.0 — Initial installer.
+#   v0.1.0 — Initial release.
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 IFS=$'\n\t'
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FLAGS  (parsed before anything else so helpers can see them)
+# FLAGS
 # ─────────────────────────────────────────────────────────────────────────────
 
 _NO_PAUSE=0
@@ -57,20 +50,17 @@ for _arg in "$@"; do
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PORTABLE READLINK  (macOS BSD readlink has no -f; Git Bash works fine)
+# PORTABLE READLINK
 # ─────────────────────────────────────────────────────────────────────────────
 
 _readlink_f() {
     local target="$1"
-    # GNU readlink -f
     if readlink -f "$target" &>/dev/null 2>&1; then
         readlink -f "$target"; return
     fi
-    # Homebrew greadlink on macOS
     if command -v greadlink &>/dev/null; then
         greadlink -f "$target"; return
     fi
-    # Pure bash fallback (resolves one symlink level — good enough for bootstrap)
     local dir; dir="$(cd "$(dirname "$target")" 2>/dev/null && pwd -P)"
     echo "${dir}/$(basename "$target")"
 }
@@ -78,10 +68,10 @@ _readlink_f() {
 # ─────────────────────────────────────────────────────────────────────────────
 # BOOTSTRAP
 # ─────────────────────────────────────────────────────────────────────────────
-# _LIB_DIR   = xspace/_configure/lib/    (where this script lives)
-# _X_DIR     = xspace/_configure/        (orchestrator root, has bin/ lib/ .xspace/)
-# XSPACE_ROOT = xspace/                  (repo root, where xspace.conf lives)
-# NOTE: _X_DIR must NEVER be named XSPACE_DIR — that name is reserved in xspace.conf
+# _LIB_DIR    = xspace/_configure/lib/
+# _X_DIR      = xspace/_configure/
+# XSPACE_ROOT = xspace/
+# NOTE: _X_DIR must NEVER be named XSPACE_DIR — reserved in xspace.conf
 
 _LIB_DIR="$(cd "$(dirname "$(_readlink_f "${BASH_SOURCE[0]}")")" && pwd)"
 _X_DIR="$(cd "$_LIB_DIR/.." && pwd)"
@@ -111,13 +101,11 @@ _detect_os() {
 }
 OS="$(_detect_os)"
 
-# Detect WSL2 (uname -s returns Linux, but version contains 'microsoft')
 IS_WSL=false
 if [[ "$OS" == "linux" && -f /proc/version ]]; then
     grep -qi microsoft /proc/version 2>/dev/null && IS_WSL=true || true
 fi
 
-# Package manager hint (used in install suggestions)
 case "$OS" in
     linux)
         if   command -v dnf    &>/dev/null; then PKG_MGR="sudo dnf install"
@@ -137,7 +125,6 @@ case "$OS" in
     *) PKG_MGR="<your package manager>" ;;
 esac
 
-# Portable python detection (Windows may only have 'python' or 'py', not 'python3')
 PYTHON3=""
 for _p in python3 python py; do
     if command -v "$_p" &>/dev/null \
@@ -146,7 +133,6 @@ for _p in python3 python py; do
     fi
 done
 
-# Portable pip detection
 PIP3=""
 for _p in pip3 pip "python3 -m pip" "python -m pip"; do
     # shellcheck disable=SC2086
@@ -190,21 +176,21 @@ ABS_BK_CONFIG="$XSPACE_ROOT/$BACKUPSPACE_CONFIG_DIR"
 ABS_BK_LOGS="$XSPACE_ROOT/$BACKUPSPACE_LOG_DIR"
 ABS_BK_CONF="$XSPACE_ROOT/$BACKUPSPACE_CONF"
 
-# sconl-space
-ABS_SCONLSPACE="$XSPACE_ROOT/$SCONLSPACE_DIR"
-ABS_SC_BIN="$ABS_SCONLSPACE/bin"
-ABS_SC_LIB="$ABS_SCONLSPACE/lib"
-ABS_SC_DATA="$ABS_SCONLSPACE/data"
+# isconl-space (renamed from sconl-space)
+ABS_ISCONLSPACE="$XSPACE_ROOT/$ISCONLSPACE_DIR"
+ABS_ISC_BIN="$ABS_ISCONLSPACE/bin"
+ABS_ISC_LIB="$ABS_ISCONLSPACE/lib"
+ABS_ISC_DATA="$ABS_ISCONLSPACE/data"
 
-# sconl-space/data subdirectories (flat-file mode structure)
-ABS_SC_DATA_SCOPE="$ABS_SC_DATA/scope"
-ABS_SC_DATA_SCOPE_REFLECTIONS="$ABS_SC_DATA/scope/reflections"
-ABS_SC_DATA_SPACE="$ABS_SC_DATA/space"
-ABS_SC_DATA_SPARK="$ABS_SC_DATA/spark"
-ABS_SC_DATA_JOURNAL="$ABS_SC_DATA/journal"
-ABS_SC_DATA_NOTES="$ABS_SC_DATA/notes"
+# isconl-space/data subdirectories (flat-file mode)
+ABS_ISC_DATA_SCOPE="$ABS_ISC_DATA/scope"
+ABS_ISC_DATA_SCOPE_REFLECTIONS="$ABS_ISC_DATA/scope/reflections"
+ABS_ISC_DATA_SPACE="$ABS_ISC_DATA/space"
+ABS_ISC_DATA_SPARK="$ABS_ISC_DATA/spark"
+ABS_ISC_DATA_JOURNAL="$ABS_ISC_DATA/journal"
+ABS_ISC_DATA_NOTES="$ABS_ISC_DATA/notes"
 
-# iSconl shared data directory (SQLite mode — outside repo)
+# iSconl SQLite data (outside repo)
 ABS_ISCONL_DATA="${ISCONL_DATA_DIR:-$HOME/.local/share/isconl}"
 ABS_ISCONL_EXPORTS="$ABS_ISCONL_DATA/exports"
 
@@ -227,13 +213,11 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 # CHANGE TRACKING
 # ─────────────────────────────────────────────────────────────────────────────
-# Every meaningful outcome is recorded into one of these arrays.
-# The summary section at the end reads them to show what changed.
 
-_CHG_NEW=()       # created for the first time this run
-_CHG_UPDATED=()   # existed but was modified / refreshed
-_CHG_WARNED=()    # warning: something missing or failed
-_CHG_EXISTING=0   # already present and unchanged (count only — not printed during run)
+_CHG_NEW=()
+_CHG_UPDATED=()
+_CHG_WARNED=()
+_CHG_EXISTING=0
 
 _chg_new()      { _CHG_NEW+=("$*"); }
 _chg_updated()  { _CHG_UPDATED+=("$*"); }
@@ -249,8 +233,6 @@ ok()   { echo "  + $*"; }
 warn() { _chg_warned "$*"; echo "  ! $*"; }
 hr()   { echo ""; echo "  -- $* ---------------------------------------------------"; }
 
-# Wrapper: mkdir -p with change tracking. Call with a label and one or more dirs.
-# Usage: _mkdirs "label" dir1 [dir2 ...]
 _mkdirs() {
     local label="$1"; shift
     local any_new=false
@@ -293,8 +275,6 @@ remove_pattern_from_rc() {
     fi
 }
 
-# Initialize a TSV file with a header row if it doesn't exist yet.
-# Idempotent — never overwrites existing data.
 init_tsv() {
     local file="$1" header="$2"
     if [[ ! -f "$file" ]]; then
@@ -311,7 +291,7 @@ init_tsv() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 echo ""
-echo "  XSpace installer v1.0.0"
+echo "  XSpace installer v1.1.0"
 echo "  root : $XSPACE_ROOT"
 echo "  bin  : $USER_BIN"
 echo "  rc   : $SHELL_RC"
@@ -323,25 +303,25 @@ echo ""
 # ─────────────────────────────────────────────────────────────────────────────
 hr "Directories"
 
-_mkdirs "_configure/bin + lib"      "$_X_BIN" "$_X_LIB" "$USER_BIN"
-_mkdirs "_configure/.xspace marker" "$_X_MARKER"
-_mkdirs "animate-space/bin + lib"   "$ABS_AX_BIN" "$ABS_AX_LIB"
+_mkdirs "_configure/bin + lib"       "$_X_BIN" "$_X_LIB" "$USER_BIN"
+_mkdirs "_configure/.xspace marker"  "$_X_MARKER"
+_mkdirs "animate-space/bin + lib"    "$ABS_AX_BIN" "$ABS_AX_LIB"
 _mkdirs "animate-space font/export dirs" \
         "$ABS_TEXT_FONTS" "$ABS_TEXT_EXPORTS" \
         "$ABS_SVG_EXPORTS" "$ABS_SVG_PYTHON" \
         "$XSPACE_ROOT/$ANIMATEX_SVG_FONTS_DIR"
-_mkdirs "git-space log dir"         "$GITSPACE_LOG_DIR"
-_mkdirs "sys-space/bin + lib"       "$ABS_SYS_BIN" "$ABS_SYS_LIB"
-_mkdirs "backup-space dirs"         "$ABS_BK_BIN" "$ABS_BK_LIB" "$ABS_BK_CONFIG" "$ABS_BK_LOGS"
-_mkdirs "sconl-space/bin + lib"     "$ABS_SC_BIN" "$ABS_SC_LIB"
-_mkdirs "sconl-space/data root"     "$ABS_SC_DATA"
-_mkdirs "sconl-space/data/scope"    "$ABS_SC_DATA_SCOPE" "$ABS_SC_DATA_SCOPE_REFLECTIONS"
-_mkdirs "sconl-space/data/space"    "$ABS_SC_DATA_SPACE"
-_mkdirs "sconl-space/data/spark"    "$ABS_SC_DATA_SPARK"
-_mkdirs "sconl-space/data/journal"  "$ABS_SC_DATA_JOURNAL"
-_mkdirs "sconl-space/data/notes"    "$ABS_SC_DATA_NOTES"
-_mkdirs "iSconl shared data dir"    "$ABS_ISCONL_DATA" "$ABS_ISCONL_EXPORTS"
-_mkdirs "xspace share dir"          "$XSPACE_SHARE"
+_mkdirs "git-space log dir"          "$GITSPACE_LOG_DIR"
+_mkdirs "sys-space/bin + lib"        "$ABS_SYS_BIN" "$ABS_SYS_LIB"
+_mkdirs "backup-space dirs"          "$ABS_BK_BIN" "$ABS_BK_LIB" "$ABS_BK_CONFIG" "$ABS_BK_LOGS"
+_mkdirs "isconl-space/bin + lib"     "$ABS_ISC_BIN" "$ABS_ISC_LIB"
+_mkdirs "isconl-space/data root"     "$ABS_ISC_DATA"
+_mkdirs "isconl-space/data/scope"    "$ABS_ISC_DATA_SCOPE" "$ABS_ISC_DATA_SCOPE_REFLECTIONS"
+_mkdirs "isconl-space/data/space"    "$ABS_ISC_DATA_SPACE"
+_mkdirs "isconl-space/data/spark"    "$ABS_ISC_DATA_SPARK"
+_mkdirs "isconl-space/data/journal"  "$ABS_ISC_DATA_JOURNAL"
+_mkdirs "isconl-space/data/notes"    "$ABS_ISC_DATA_NOTES"
+_mkdirs "iSconl shared data dir"     "$ABS_ISCONL_DATA" "$ABS_ISCONL_EXPORTS"
+_mkdirs "xspace share dir"           "$XSPACE_SHARE"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 2 — BACKUPS.CONF (first install only — never overwrite)
@@ -366,14 +346,13 @@ fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 3 — PATH + SYMLINKS
-# Strip stale entries first (prevents accumulation on reinstall/move),
-# then loop XSPACE_ALL_BIN_DIRS and write a guard + symlinks for each.
 # ─────────────────────────────────────────────────────────────────────────────
 hr "PATH entries + symlinks"
 
-# Strip stale entries for all known space bin dirs before re-adding.
+# Strip stale entries — both old sconl-space/bin and all current space bin dirs
 for _stale_space in _configure/bin animate-space/bin git-space/bin sys-space/bin \
-                    backup-space/bin sconl-space/bin server-space/bin creator-space/bin; do
+                    backup-space/bin sconl-space/bin isconl-space/bin \
+                    server-space/bin creator-space/bin; do
     remove_pattern_from_rc "$SHELL_RC" "${_stale_space}:\\\$PATH" "stale ${_stale_space} entry"
 done
 
@@ -385,8 +364,6 @@ for rel_bin in "${XSPACE_ALL_BIN_DIRS[@]}"; do
         continue
     fi
 
-    # Use \$PATH (escaped) so the written guard references $PATH at shell
-    # startup time, not the expanded value at install time.
     PATH_LINE="[[ \":\$PATH:\" != *\":${abs_bin}:\"* ]] && PATH=\"${abs_bin}:\$PATH\""
     add_line_to_rc "$SHELL_RC" "$PATH_LINE" "xspace: ${rel_bin} on PATH"
 
@@ -399,12 +376,12 @@ for rel_bin in "${XSPACE_ALL_BIN_DIRS[@]}"; do
         name="$(basename "$f")"
         target="$USER_BIN/$name"
         if [[ -L "$target" && "$(readlink "$target")" == "$f" ]]; then
-            (( ++linked )) || true       # already correct
+            (( ++linked )) || true
         elif [[ -L "$target" ]]; then
-            ln -sf "$f" "$target"        # stale symlink — update
+            ln -sf "$f" "$target"
             (( ++updated_links )) || true
         else
-            ln -sf "$f" "$target"        # new symlink
+            ln -sf "$f" "$target"
             (( ++linked )) || true
         fi
     done
@@ -446,6 +423,11 @@ else
     warn "Re-run install.sh after git-space is set up"
 fi
 
+# Pub cache bin on PATH — needed for dart pub global tools (firebase, flutterfire, etc.)
+PUB_CACHE_BIN="${DART_PUB_GLOBAL_DIR:-$HOME/.pub-cache}/bin"
+PUB_PATH_LINE="[[ \":\$PATH:\" != *\":${PUB_CACHE_BIN}:\"* ]] && PATH=\"${PUB_CACHE_BIN}:\$PATH\""
+add_line_to_rc "$SHELL_RC" "$PUB_PATH_LINE" "xspace: dart pub global bin on PATH"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 5 — SPACE VALIDATION
 # ─────────────────────────────────────────────────────────────────────────────
@@ -456,8 +438,7 @@ for entry in \
     "git-space:$ABS_GITSPACE" \
     "sys-space:$ABS_SYSSPACE" \
     "backup-space:$ABS_BACKUPSPACE" \
-    "sconl-space:$ABS_SCONLSPACE" \
-    "code-space:$XSPACE_ROOT/$CODESPACE_DIR"
+    "isconl-space:$ABS_ISCONLSPACE"
 do
     label="${entry%%:*}"; path="${entry##*:}"
     if [[ -d "$path" ]]; then
@@ -489,7 +470,6 @@ else
     else
         log "Installing Pillow..."
         _pillow_installed=false
-
         if [[ -n "$PIP3" ]]; then
             if eval "$PIP3 install $PILLOW_PKG --break-system-packages" &>/dev/null 2>&1; then
                 _pillow_installed=true
@@ -497,7 +477,6 @@ else
                 _pillow_installed=true
             fi
         fi
-
         if [[ "$_pillow_installed" == true ]]; then
             _chg_new "Pillow (Python imaging library)"
             ok "Pillow installed"
@@ -510,7 +489,7 @@ else
     fi
 fi
 
-_chg_existing  # animatex-svg stdlib note (always passes)
+_chg_existing
 ok "animatex-svg: stdlib only — no extra deps"
 ok "equicycle.py: stdlib only — no extra deps"
 
@@ -563,7 +542,7 @@ for d in "$ABS_TEXT_EXPORTS" "$ABS_SVG_EXPORTS" "$ABS_BK_LOGS"; do
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 9 — VM TOOLS  (Linux/macOS only — skip on Windows)
+# STEP 9 — VM TOOLS  (Linux/macOS only)
 # ─────────────────────────────────────────────────────────────────────────────
 hr "VM tools"
 
@@ -580,7 +559,6 @@ else
             mac)   warn "virsh not found — serverx/creatorx require Linux  (use UTM or a VM)" ;;
         esac
     fi
-
     if command -v virt-viewer &>/dev/null; then
         _chg_existing
         ok "virt-viewer available  (creatorx -> Windows VM GUI)"
@@ -593,94 +571,81 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 10 — SCONL-SPACE DATA INITIALIZATION
+# STEP 10 — ISCONL-SPACE DATA INITIALIZATION
 # ─────────────────────────────────────────────────────────────────────────────
-hr "sconl-space data (flat-file mode)"
+hr "isconl-space data (flat-file mode)"
 
-# .gitignore for data/ — personal data stays local, never committed
-SCONL_DATA_GI="$ABS_SC_DATA/.gitignore"
-if [[ ! -f "$SCONL_DATA_GI" ]]; then
-    cat > "$SCONL_DATA_GI" <<'GITIGNORE'
-# sconl-space/data — personal data, not committed to the repo.
+ISC_DATA_GI="$ABS_ISC_DATA/.gitignore"
+if [[ ! -f "$ISC_DATA_GI" ]]; then
+    cat > "$ISC_DATA_GI" <<'GITIGNORE'
+# isconl-space/data — personal data, not committed to the repo.
 # Everything in here is yours: tasks, journal, goals, spaces, ideas.
 *
 !.gitignore
 GITIGNORE
-    _chg_new "sconl-space/data/.gitignore"
-    ok "Created sconl-space/data/.gitignore"
+    _chg_new "isconl-space/data/.gitignore"
+    ok "Created isconl-space/data/.gitignore"
 else
     _chg_existing
-    ok "sconl-space/data/.gitignore present"
+    ok "isconl-space/data/.gitignore present"
 fi
 
-# -- Scope flat-file TSV headers --
-init_tsv "$ABS_SC_DATA_SCOPE/inbox.tsv" \
+# -- Scope --
+init_tsv "$ABS_ISC_DATA_SCOPE/inbox.tsv" \
     "ID\tTITLE\tBODY\tSTATUS\tSOURCE\tCAPTURED_AT\tEQ_YEAR\tEQ_CYCLE\tEQ_DAY"
-
-init_tsv "$ABS_SC_DATA_SCOPE/tasks.tsv" \
+init_tsv "$ABS_ISC_DATA_SCOPE/tasks.tsv" \
     "ID\tTITLE\tSTATUS\tPRIORITY\tPROJECT_ID\tCARRY_FWD\tDUE_DATE\tENERGY\tCREATED_AT\tUPDATED_AT"
-
-init_tsv "$ABS_SC_DATA_SCOPE/goals.tsv" \
+init_tsv "$ABS_ISC_DATA_SCOPE/goals.tsv" \
     "ID\tTITLE\tKPI\tTARGET\tCURRENT\tLEVEL\tSTATUS\tWEIGHT\tCREATED_AT\tUPDATED_AT"
-
-init_tsv "$ABS_SC_DATA_SCOPE/projects.tsv" \
+init_tsv "$ABS_ISC_DATA_SCOPE/projects.tsv" \
     "ID\tGOAL_ID\tTITLE\tSTATUS\tDOD\tCREATED_AT"
-
-init_tsv "$ABS_SC_DATA_SCOPE/cycles.tsv" \
+init_tsv "$ABS_ISC_DATA_SCOPE/cycles.tsv" \
     "ID\tEQ_YEAR\tCYCLE_NUM\tTHEME\tSTART_DATE\tEND_DATE\tSTATUS\tOBJ1\tOBJ2\tOBJ3"
-
-init_tsv "$ABS_SC_DATA_SCOPE/reflections.tsv" \
+init_tsv "$ABS_ISC_DATA_SCOPE/reflections.tsv" \
     "DATE\tMOOD\tENERGY\tHAS_CONTENT"
 
-# -- Space flat-file TSV headers --
-init_tsv "$ABS_SC_DATA_SPACE/spaces.tsv" \
+# -- Space --
+init_tsv "$ABS_ISC_DATA_SPACE/spaces.tsv" \
     "ID\tNAME\tTYPE\tSTATUS\tHEALTH\tDESCRIPTION\tEMOJI\tCREATED_AT\tLAST_REVIEWED"
-
-init_tsv "$ABS_SC_DATA_SPACE/projects.tsv" \
+init_tsv "$ABS_ISC_DATA_SPACE/projects.tsv" \
     "ID\tSPACE_ID\tTITLE\tSTATUS\tCREATED_AT"
-
-init_tsv "$ABS_SC_DATA_SPACE/contacts.tsv" \
+init_tsv "$ABS_ISC_DATA_SPACE/contacts.tsv" \
     "ID\tSPACE_ID\tNAME\tROLE\tLAST_CONTACT\tCREATED_AT"
-
-init_tsv "$ABS_SC_DATA_SPACE/kpi_defs.tsv" \
+init_tsv "$ABS_ISC_DATA_SPACE/kpi_defs.tsv" \
     "ID\tSPACE_ID\tNAME\tUNIT\tTARGET"
-
-init_tsv "$ABS_SC_DATA_SPACE/kpi_log.tsv" \
+init_tsv "$ABS_ISC_DATA_SPACE/kpi_log.tsv" \
     "ID\tKPI_ID\tSPACE_ID\tNAME\tVALUE\tUNIT\tMEASURED_AT"
-
-init_tsv "$ABS_SC_DATA_SPACE/events.tsv" \
+init_tsv "$ABS_ISC_DATA_SPACE/events.tsv" \
     "ID\tSPACE_ID\tTYPE\tTITLE\tEVENT_DATE"
 
-# -- Spark flat-file TSV headers --
-init_tsv "$ABS_SC_DATA_SPARK/ideas.tsv" \
+# -- Spark --
+init_tsv "$ABS_ISC_DATA_SPARK/ideas.tsv" \
     "ID\tSTAGE\tTYPE\tBODY\tTITLE\tCREATED_AT\tUPDATED_AT"
-
-init_tsv "$ABS_SC_DATA_SPARK/learning.tsv" \
+init_tsv "$ABS_ISC_DATA_SPARK/learning.tsv" \
     "ID\tTITLE\tTYPE\tSTATUS\tPROGRESS\tAUTHOR\tCREATED_AT\tUPDATED_AT"
-
-init_tsv "$ABS_SC_DATA_SPARK/dia.tsv" \
+init_tsv "$ABS_ISC_DATA_SPARK/dia.tsv" \
     "ID\tNAME\tROLE\tTYPE\tDEPTH\tLAST_CONTACT\tTRAJECTORY\tCREATED_AT"
 
-# -- Shared event bus (flat mode) --
-init_tsv "$ABS_SC_DATA/events.tsv" \
+# -- Shared event bus --
+init_tsv "$ABS_ISC_DATA/events.tsv" \
     "ID\tSOURCE\tTYPE\tPAYLOAD\tCREATED_AT\tCONSUMED_BY"
 
-# -- Legacy tasks.tsv compatibility (kept for v1.0.0 data migration) --
-if [[ ! -f "$ABS_SC_DATA/tasks.tsv" ]]; then
-    printf 'ID\tSTATUS\tPRIORITY\tDUE\tCREATED\tTITLE\tTAGS\n' > "$ABS_SC_DATA/tasks.tsv"
+# -- Legacy tasks.tsv (v1.0.0 compat) --
+if [[ ! -f "$ABS_ISC_DATA/tasks.tsv" ]]; then
+    printf 'ID\tSTATUS\tPRIORITY\tDUE\tCREATED\tTITLE\tTAGS\n' > "$ABS_ISC_DATA/tasks.tsv"
     _chg_new "legacy tasks.tsv (v1.0.0 compatibility)"
-    ok "Initialized legacy tasks.tsv (v1.0.0 compatibility)"
+    ok "Initialized legacy tasks.tsv"
 else
     _chg_existing
     ok "Legacy tasks.tsv present"
 fi
 
-# -- Calendar data init --
-CALENDAR_JSON="$ABS_SC_DATA/calendar.json"
+# -- Calendar --
+CALENDAR_JSON="$ABS_ISC_DATA/calendar.json"
 if [[ ! -f "$CALENDAR_JSON" ]]; then
     cat > "$CALENDAR_JSON" << 'JSON'
 {
-  "_comment": "sconl-space/data/calendar.json — personal calendar data. Edit directly or: sconlx cal edit",
+  "_comment": "isconl-space/data/calendar.json — personal calendar data. Edit: isconl cal edit",
   "birthdays": [],
   "custom_events": [],
   "settings": {
@@ -700,22 +665,21 @@ else
     ok "calendar.json present"
 fi
 
-# -- Equicycle engine check --
-EQUICYCLE_PY="$ABS_SCONLSPACE/lib/equicycle.py"
+# -- Equicycle engine --
+EQUICYCLE_PY="$ABS_ISCONLSPACE/lib/equicycle.py"
 if [[ -f "$EQUICYCLE_PY" ]]; then
     _chg_existing
     ok "equicycle.py engine found"
     if [[ -n "$PYTHON3" ]] && "$PYTHON3" "$EQUICYCLE_PY" --format fields &>/dev/null 2>&1; then
-        _chg_existing
-        ok "equicycle.py working"
+        _chg_existing; ok "equicycle.py working"
     else
         warn "equicycle.py found but failed self-test — check $PYTHON3 installation"
     fi
 else
-    warn "equicycle.py missing at $EQUICYCLE_PY — sconlx cycle display won't work"
+    warn "equicycle.py missing at $EQUICYCLE_PY — cycle display won't work"
 fi
 
-# -- sqlite3 check --
+# -- sqlite3 --
 if command -v sqlite3 &>/dev/null; then
     _chg_existing
     ok "sqlite3 available (SQLite mode ready when Flutter apps installed)"
@@ -724,6 +688,101 @@ else
         linux)   warn "sqlite3 not found — install: $PKG_MGR sqlite" ;;
         mac)     warn "sqlite3 not found — install: brew install sqlite" ;;
         windows) warn "sqlite3 not found — install: winget install SQLite.SQLite" ;;
+    esac
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 11 — FLUTTER / DART / FIREBASE TOOLING
+# Checks presence and version of each tool. Does not auto-install anything
+# here — that is the job of  updatex --flutter  so the user is always in
+# control of when SDK updates run.
+# ─────────────────────────────────────────────────────────────────────────────
+hr "Flutter / Dart / Firebase tooling"
+
+# Flutter
+if command -v flutter &>/dev/null; then
+    _chg_existing
+    _flutter_ver="$(flutter --version 2>/dev/null | awk 'NR==1{print $2}')"
+    ok "flutter ${_flutter_ver}"
+
+    # Dart (always bundled with Flutter — check separately for standalone too)
+    if command -v dart &>/dev/null; then
+        _dart_ver="$(dart --version 2>&1 | awk '{print $4}')"
+        _chg_existing
+        ok "dart ${_dart_ver}"
+    else
+        _chg_existing
+        ok "dart  (bundled with flutter)"
+    fi
+
+    # Check whether pub-cache/bin is on PATH (needed for global tools)
+    _pub_bin="${DART_PUB_GLOBAL_DIR:-$HOME/.pub-cache}/bin"
+    if [[ ":$PATH:" != *":${_pub_bin}:"* ]]; then
+        warn "~/.pub-cache/bin is not on PATH — global Dart tools won't be found"
+        warn "This was added to $SHELL_RC above; open a new terminal or: source $SHELL_RC"
+    else
+        _chg_existing
+        ok "~/.pub-cache/bin is on PATH"
+    fi
+else
+    warn "flutter not found — install from https://docs.flutter.dev/get-started/install"
+    case "$OS" in
+        linux)   warn "Linux: snap install flutter --classic  or  download the SDK manually" ;;
+        mac)     warn "macOS: brew install --cask flutter  or  download the SDK manually" ;;
+        windows) warn "Windows: winget install Google.Flutter  or  download the SDK manually" ;;
+    esac
+fi
+
+# Firebase CLI  (npm-based — the standard full Firebase CLI)
+if command -v firebase &>/dev/null; then
+    _firebase_ver="$(firebase --version 2>/dev/null || echo 'unknown')"
+    _chg_existing
+    ok "firebase CLI ${_firebase_ver}"
+else
+    warn "Firebase CLI not found"
+    if command -v npm &>/dev/null; then
+        warn "Install: npm install -g firebase-tools"
+        warn "Then run: updatex --flutter  to keep it current automatically"
+    else
+        warn "npm not found — install Node.js first: https://nodejs.org/"
+        warn "Then: npm install -g firebase-tools"
+    fi
+fi
+
+# FlutterFire CLI  (dart pub global)
+if command -v flutterfire &>/dev/null; then
+    _chg_existing
+    ok "flutterfire CLI found"
+else
+    warn "flutterfire CLI not found"
+    if command -v dart &>/dev/null; then
+        warn "Install: dart pub global activate flutterfire_cli"
+        warn "Then run: updatex --flutter  to keep it current automatically"
+    fi
+fi
+
+# Dart pub global outdated check (informational only — no auto-upgrade)
+if command -v dart &>/dev/null; then
+    _outdated="$(dart pub global list 2>/dev/null \
+        | grep -c '.' 2>/dev/null || echo 0)"
+    if (( _outdated > 0 )); then
+        _chg_existing
+        ok "dart pub global: ${_outdated} package(s) installed  (updatex --flutter to upgrade)"
+    fi
+fi
+
+# Node.js / npm  (needed for Firebase CLI and some Flutter tooling)
+if command -v node &>/dev/null; then
+    _node_ver="$(node --version 2>/dev/null)"
+    _npm_ver="$(npm --version 2>/dev/null)"
+    _chg_existing
+    ok "node ${_node_ver}  /  npm ${_npm_ver}"
+else
+    warn "node/npm not found — required for Firebase CLI"
+    case "$OS" in
+        linux)   warn "Install: $PKG_MGR nodejs npm  or  https://nodejs.org/" ;;
+        mac)     warn "Install: brew install node  or  https://nodejs.org/" ;;
+        windows) warn "Install: winget install OpenJS.NodeJS  or  https://nodejs.org/" ;;
     esac
 fi
 
@@ -743,25 +802,19 @@ echo ""
 
 if (( ${#_CHG_NEW[@]} > 0 )); then
     echo "  New (${#_CHG_NEW[@]})"
-    for item in "${_CHG_NEW[@]}"; do
-        echo "    +  $item"
-    done
+    for item in "${_CHG_NEW[@]}"; do echo "    +  $item"; done
     echo ""
 fi
 
 if (( ${#_CHG_UPDATED[@]} > 0 )); then
     echo "  Updated (${#_CHG_UPDATED[@]})"
-    for item in "${_CHG_UPDATED[@]}"; do
-        echo "    ~  $item"
-    done
+    for item in "${_CHG_UPDATED[@]}"; do echo "    ~  $item"; done
     echo ""
 fi
 
 if (( ${#_CHG_WARNED[@]} > 0 )); then
     echo "  Warnings (${#_CHG_WARNED[@]})"
-    for item in "${_CHG_WARNED[@]}"; do
-        echo "    !  $item"
-    done
+    for item in "${_CHG_WARNED[@]}"; do echo "    !  $item"; done
     echo ""
 fi
 
@@ -782,37 +835,36 @@ echo "  -- Complete --------------------------------------------------"
 echo ""
 echo "  Run 'refreshx' or open a new terminal to activate."
 echo ""
-echo "  Commands available:"
-echo "    sconlx               iSconl dashboard (tasks, journal, goals, spaces, ideas)"
-echo "    sconlx --help        full command reference"
-echo "    sconlx scope         daily loop: inbox, tasks, goals, reflection"
-echo "    sconlx space         portfolio: businesses, projects, hobbies"
-echo "    sconlx spark         inner world: journal, ideas, learning"
-echo "    sconlx journal       open today's journal"
-echo "    sconlx task          quick task management (legacy alias)"
+echo "  iSconl commands:"
+echo "    isconl               full iSconl dashboard"
+echo "    isconl --help        all commands"
+echo "    iscope               Scope: inbox, tasks, goals, reflection"
+echo "    ispace               Space: portfolio, projects, contacts"
+echo "    ispark               Spark: journal, ideas, learning"
 echo ""
+echo "  XSpace tools:"
 echo "    animatex --help      animated text assets"
 echo "    commitx --help       git commit helper"
-echo "    backupx --help       backup orchestrator"
+echo "    backupx --help       OneDrive backup orchestrator"
+echo "    updatex --help       system + repo + Flutter updater"
 echo "    installx             re-run this installer (from anywhere)"
-echo "    serverx --help       server VM manager"
-echo "    creatorx --help      Windows VM manager"
-echo "    updatex --help       system + repo updater"
 echo "    refreshx             reload shell"
 echo ""
-echo "  sconlx data (flat-file mode):"
-echo "    $ABS_SC_DATA"
+echo "  iSconl data (flat-file mode):"
+echo "    $ABS_ISC_DATA"
 echo ""
 echo "  SQLite mode activates automatically when Flutter iSconl apps are"
 echo "  installed and databases appear at:"
 echo "    $ABS_ISCONL_DATA"
 echo ""
+echo "  Flutter tooling:"
+echo "    updatex --flutter    upgrade Flutter, Dart globals, Firebase CLI"
+echo ""
 echo "  Moved the repo? Re-run installx — symlinks update automatically."
 echo ""
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PAUSE  (keeps the window open after "Run as Program" in GNOME Files, etc.)
-# Suppress with --no-pause when called from update.sh, installx, or CI.
+# PAUSE
 # ─────────────────────────────────────────────────────────────────────────────
 
 if [[ "$_NO_PAUSE" != "1" ]]; then

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# isconl-space/bin/ispark
+#
+# iSpark — dedicated Spark entry point.
+# Inner world: journal, ideas, learning, and DIA (deep intentional attention).
+#
+# Thin wrapper backed by the isconl binary. isconl's basename dispatch
+# auto-prepends 'spark' when invoked under this name.
+#
+# Usage:
+#   ispark                          Spark overview
+#   ispark journal                  Open today's journal entry
+#   ispark journal [view|list|new]
+#   ispark journal YYYY-MM-DD       Open entry for a specific date
+#   ispark note [title]             Quick note capture
+#   ispark idea [list|add|show|develop|advance|export|archive]
+#   ispark learn [list|add|show|progress|highlight|done|synthesise]
+#   ispark dia [list|show|overdue|add|log]
+#   ispark --help                   Full Spark help
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────────────────────────────────────────
+#   v1.0.0 — Initial. Dedicated Spark entry point backed by isconl binary.
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+
+_readlink_f() {
+  local target="$1"
+  if readlink -f "$target" &>/dev/null 2>&1; then
+    readlink -f "$target"; return
+  fi
+  if command -v greadlink &>/dev/null; then
+    greadlink -f "$target"; return
+  fi
+  local dir; dir="$(cd "$(dirname "$target")" 2>/dev/null && pwd -P)"
+  echo "${dir}/$(basename "$target")"
+}
+
+_BIN_DIR="$(cd "$(dirname "$(_readlink_f "${BASH_SOURCE[0]}")")" && pwd)"
+_ISCONL="$_BIN_DIR/isconl"
+
+if [[ ! -f "$_ISCONL" ]]; then
+  printf '  x  isconl not found at %s\n' "$_ISCONL" >&2
+  printf '     Reinstall: installx\n' >&2
+  exit 1
+fi
+
+exec "$_ISCONL" spark "$@"

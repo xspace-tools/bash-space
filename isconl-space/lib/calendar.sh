@@ -21,7 +21,7 @@ _CALENDAR_LOADED=1
 # ─────────────────────────────────────────────────────────────────────────────
 
 _CAL_DATA_FILE="${_FLAT_DIR}/calendar.json"
-_CAL_PY="${_SCONLSPACE_LIB_DIR}/calendar_data.py"
+_CAL_PY="${_ISCONLSPACE_LIB_DIR}/calendar_data.py"
 _CAL_REGIONS="KE,INT"           # Holiday regions to show
 
 # These path vars are set by db.sh after _db_init — can't reference at source time.
