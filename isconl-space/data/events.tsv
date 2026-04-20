@@ -1,4 +1,0 @@
-ID	SOURCE	TYPE	PAYLOAD	CREATED_AT	CONSUMED_BY
-27e472cd-ea6c-4576-a7fa-846c8c890f2b	sconlx	scope.reflection.saved	{"date":"2026-04-14","mood":"grey"}}	2026-04-14T17:10:08Z	sconlx
-3e2810be-f0db-4bb8-83dd-42e7ef665369	sconlx	sconlx.capture	{"title":"remember to restructure the ui for more spacing","inbox_id":"C001"}}	2026-04-15T12:10:55Z	sconlx
-007e18df-af04-46cc-8b26-be5703144e00	sconlx	scope.reflection.saved	{"date":"2026-04-15","mood":"work"}}	2026-04-15T15:04:05Z	sconlx

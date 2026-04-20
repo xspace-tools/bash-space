@@ -1,0 +1,222 @@
+#!/usr/bin/env bash
+# bash-space/bin/promptx
+#
+# QSPACE prompt manager — thin entry point
+# Library: bash-space/lib/prompt.sh
+#
+# Usage:
+#   promptx                 show status
+#   promptx status          show prompt config and active state
+#   promptx debug           diagnose why the prompt may not be working
+#   promptx colors          print the branch color table
+#   promptx help            show this help
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# CHANGELOG
+# ─────────────────────────────────────────────────────────────────────────────
+#   v1.1.0 — Renamed from prompt-space to bash-space. debug command added.
+#   v1.0.0 — Initial release.
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# ─── RESOLVE LIB PATH ────────────────────────────────────────────────────────
+
+_readlink_f() {
+    local target="$1"
+    if readlink -f "$target" &>/dev/null 2>&1; then
+        readlink -f "$target"; return
+    fi
+    if command -v greadlink &>/dev/null; then
+        greadlink -f "$target"; return
+    fi
+    local dir; dir="$(cd "$(dirname "$target")" 2>/dev/null && pwd -P)"
+    echo "${dir}/$(basename "$target")"
+}
+
+_BIN_DIR="$(cd "$(dirname "$(_readlink_f "${BASH_SOURCE[0]}")")" && pwd)"
+_LIB_DIR="$(cd "$_BIN_DIR/../lib" && pwd)"
+_PROMPT_SH="$_LIB_DIR/prompt.sh"
+
+# Shell RC — same logic as install.sh
+if   [[ -n "${ZSH_VERSION-}"  ]]; then _SHELL_RC="$HOME/.zshrc"
+elif [[ -n "${BASH_VERSION-}" ]]; then _SHELL_RC="$HOME/.bashrc"
+else                                    _SHELL_RC="$HOME/.profile"
+fi
+
+# ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+_ok()   { echo "  + $*"; }
+_fail() { echo "  x $*"; }
+_info() { echo "    $*"; }
+_warn() { echo "  ! $*"; }
+_hr()   { echo ""; echo "  -- $* ---------------------------------------------------"; }
+
+# ─── COMMANDS ────────────────────────────────────────────────────────────────
+
+_usage() {
+  cat <<EOF
+
+  promptx — QSPACE prompt manager v1.1.0
+
+  Commands:
+    promptx               show status
+    promptx status        show prompt config and active state
+    promptx debug         diagnose why the prompt may not be working
+    promptx colors        print the branch color table
+    promptx help          show this help
+
+  After installx always run:
+    source ~/.bashrc      (or: refreshx)
+
+EOF
+}
+
+_status() {
+  local branch
+  branch=$(git branch --show-current 2>/dev/null || true)
+
+  _hr "bash-space status"
+  _info "lib    : $_PROMPT_SH"
+  _info "rc     : $_SHELL_RC"
+  _info "shell  : ${SHELL:-unknown}"
+  echo ""
+
+  [[ -f "$_PROMPT_SH" ]] \
+    && _ok  "prompt.sh exists" \
+    || _fail "prompt.sh NOT found at $_PROMPT_SH"
+
+  if [[ -n "${PROMPT_COMMAND-}" && "$PROMPT_COMMAND" == *"__build_prompt"* ]]; then
+    _ok "prompt engine is ACTIVE in this session"
+  else
+    _warn "prompt engine is NOT active in this session"
+    _info "Fix: source ~/.bashrc  (or open a new terminal)"
+  fi
+
+  echo ""
+  if [[ -n "$branch" ]]; then
+    _info "current branch : $branch"
+  else
+    _info "current branch : (not in a git repo)"
+  fi
+  echo ""
+}
+
+_debug() {
+  local all_ok=true
+
+  _hr "bash-space debug"
+
+  # 1. prompt.sh exists?
+  echo ""
+  if [[ -f "$_PROMPT_SH" ]]; then
+    _ok "prompt.sh found"
+    _info "$_PROMPT_SH"
+  else
+    _fail "prompt.sh NOT found"
+    _info "Expected: $_PROMPT_SH"
+    _info "Fix: ensure bash-space/lib/prompt.sh exists in your xspace repo"
+    all_ok=false
+  fi
+
+  # 2. RC file has the source line?
+  echo ""
+  if grep -q "bash-space/lib/prompt.sh" "$_SHELL_RC" 2>/dev/null; then
+    _ok "source line present in $_SHELL_RC"
+    _info "$(grep "bash-space/lib/prompt.sh" "$_SHELL_RC")"
+  else
+    _fail "source line MISSING from $_SHELL_RC"
+    _info "Fix: run installx then source ~/.bashrc"
+    all_ok=false
+  fi
+
+  # 3. Prompt engine loaded in this session?
+  echo ""
+  if [[ -n "${PROMPT_COMMAND-}" && "$PROMPT_COMMAND" == *"__build_prompt"* ]]; then
+    _ok "prompt engine ACTIVE in this session"
+  else
+    _warn "prompt engine NOT active in this session"
+    if [[ "$all_ok" == true ]]; then
+      _info "source line exists but this session hasn't reloaded yet"
+      _info "Fix: source ~/.bashrc  (or open a new terminal)"
+    else
+      _info "Fix the issues above first, then: source ~/.bashrc"
+    fi
+    all_ok=false
+  fi
+
+  # 4. Starship still running?
+  echo ""
+  if grep -q 'starship init' "$_SHELL_RC" 2>/dev/null; then
+    _warn "Starship init line still in $_SHELL_RC — conflicts with bash-space"
+    _info "Fix: run installx (it removes Starship automatically)"
+    all_ok=false
+  else
+    _ok "no Starship conflict in $_SHELL_RC"
+  fi
+
+  # 5. __build_prompt function defined?
+  echo ""
+  if declare -f __build_prompt &>/dev/null; then
+    _ok "__build_prompt function is defined"
+  else
+    _warn "__build_prompt function NOT defined in this session"
+    _info "Fix: source ~/.bashrc  (or open a new terminal)"
+    all_ok=false
+  fi
+
+  # 6. Summary
+  echo ""
+  if [[ "$all_ok" == true ]]; then
+    _ok "everything looks good"
+  else
+    echo "  -- action needed --------------------------------------------"
+    echo ""
+    echo "    Most likely fix:"
+    echo ""
+    echo "      installx && source ~/.bashrc"
+    echo ""
+    echo "    Or if installx has already been run:"
+    echo ""
+    echo "      source ~/.bashrc"
+    echo ""
+  fi
+  echo ""
+}
+
+_colors() {
+  # Source prompt.sh to get the color table if not already loaded
+  # shellcheck disable=SC1090
+  [[ -z "${_PROMPT_BRANCH_COLORS[*]-}" ]] && source "$_PROMPT_SH" 2>/dev/null || true
+
+  _hr "branch color rules"
+  echo ""
+
+  declare -A _names=([31]="red" [32]="green" [33]="yellow" [34]="blue" [35]="purple" [36]="cyan")
+  local entry pattern color label
+
+  for entry in "${_PROMPT_BRANCH_COLORS[@]}"; do
+    pattern="${entry%%:*}"
+    color="${entry##*:}"
+    label="${_names[$color]:-color $color}"
+    printf "  \e[1;${color}m%-24s\e[0m  %s\n" "$pattern" "$label"
+  done
+  echo ""
+}
+
+# ─── DISPATCH ────────────────────────────────────────────────────────────────
+
+cmd="${1:-status}"
+
+case "$cmd" in
+  status)          _status ;;
+  debug)           _debug  ;;
+  colors)          _colors ;;
+  help|-h|--help)  _usage  ;;
+  *)
+    _warn "unknown command: '$cmd'"
+    _usage
+    exit 1
+    ;;
+esac
